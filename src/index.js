@@ -3,9 +3,11 @@ import { ClusterLayer } from 'maptalks.markercluster';
 import { merge } from './utils';
 import Marker from './marker';
 import Building from './building';
-import ClusterMarker from './ClusterMarker';
+import ClusterMarker from './clusterMarker';
 
 class SJGMap {
+    clusterGroup = [];
+
     defaultOption = {
         center: [121.2986, 29.1766],
         zoom: 16.2,
@@ -17,12 +19,11 @@ class SJGMap {
         data: [],
         pitch: 0,
         bearing: 180,
-        mapImage: '',
+        tiles: '',
         backgroundImage: '',
         maskImage: '',
         marker: {
             draggable: false,
-            clusterRadius: 40,
             style: {
                 width: 40,
                 height: 40,
@@ -63,6 +64,28 @@ class SJGMap {
                 decimals: 4
             },
             images: []
+        },
+        cluster: {
+            clusterRadius: 40,
+            style: {
+                width: 40,
+                height: 40,
+                opacity: 1,
+                color: 'rgba(24,58,96,0.7)',
+            },
+            line: {
+                color: "rgb(34,195,252)",
+                lineWidth: 2,
+                lineHeight: 60,
+                opacity: 1,
+                pointSize: 8
+            },
+            text: {
+                fontFamily: 'PingfangSC',
+                fontSize: 24,
+                color: "#ffffff",
+                opacity: 1,
+            },
         },
         building: {
             style: {
@@ -122,12 +145,20 @@ class SJGMap {
 
     drawClusterPoint() {
         if (this.clusterTimeout) clearTimeout(this.clusterTimeout);
-        // this.clusterTimeout = setTimeout(() => {
-        const clusters = this.clusterLayer.getClusters();
-        clusters.forEach((ele) => {
-            const marker = new ClusterMarker(ele, this.buildingLayer, this.map);
-        })
-        // }, 300)
+        this.clusterTimeout = setTimeout(() => {
+            if (this.clusterGroup.length > 0) {
+                console.log('this.clusterGroup', this.clusterGroup)
+                this.clusterGroup.forEach((ele) => {
+                    ele.remove();
+                })
+                this.clusterGroup = [];
+            }
+            const clusters = this.clusterLayer.getClusters();
+            clusters.forEach((ele) => {
+                const marker = new ClusterMarker(ele, this.option, this.buildingLayer, this.map);
+                this.clusterGroup.push(marker.origin);
+            })
+        }, 300)
     }
 
     constructor(dom, opts = {}) {
@@ -229,34 +260,52 @@ class SJGMap {
             zIndex: 1,
             'noClusterWithOneMarker': true,
             'maxClusterZoom': 18,
-            maxClusterRadius: this.option.marker.clusterRadius,
+            maxClusterRadius: this.option.cluster.clusterRadius,
             'symbol': [{
                 'markerType': 'ellipse',
                 'markerFill': { property: 'count', type: 'interval', stops: [[0, 'rgb(135, 196, 240)'], [10, '#1bbc9b'], [20, 'rgb(216, 115, 149)']] },
-                'markerFillOpacity': 0.7,
+                'markerFillOpacity': 0,
                 'markerLineOpacity': 1,
-                'markerLineWidth': 3,
-                'markerLineColor': '#fff',
+                'markerLineWidth': 0,
+                'markerLineColor': '#000000',
                 'markerWidth': { property: 'count', type: 'interval', stops: [[0, 40], [10, 60], [20, 80]] },
                 'markerHeight': { property: 'count', type: 'interval', stops: [[0, 40], [10, 60], [20, 80]] }
             }],
-            'drawClusterText': true,
-            'geometryEvents': true,
+            'drawClusterText': false,
+            'geometryEvents': false,
             'single': false
         }).addTo(this.map);
-        // this.drawClusterPoint();
+        this.drawClusterPoint();
 
-        const imageLayer = new maptalks.ImageLayer("images", [{
-            url: this.option.mapImage,
-            extent: [121.31638, 29.1666, 121.2802, 29.1866],
-            opacity: 0,
-        }], {
-            forceRenderOnMoving: true,
-            forceRenderOnZooming: true,
-            forceRenderOnRotating: true,
-            zIndex: 0
-        })
-        this.map.addLayer(imageLayer);
+        const mapExtent = [121.31638, 29.1666, 121.2802, 29.1866];
+        const stepX = (mapExtent[2] - mapExtent[0]) / 3;
+        const stepY = (mapExtent[3] - mapExtent[1]) / 3;
+
+
+
+        const { tiles } = this.option;
+        for (let i = 0; i < tiles.length; i++) {
+            const url = tiles[i];
+            const volumn = i % 3;
+            const row = Math.floor(i / 3);
+            const currentExtent = [
+                mapExtent[0] + stepX * volumn,
+                mapExtent[1] + stepY * row,
+                mapExtent[0] + stepX * (volumn + 1),
+                mapExtent[1] + stepY * (row + 1),
+            ]
+            const imageLayer = new maptalks.ImageLayer("images" + i, [{
+                url,
+                extent: currentExtent,
+                opacity: 0,
+            }], {
+                forceRenderOnMoving: true,
+                forceRenderOnZooming: true,
+                forceRenderOnRotating: true,
+                zIndex: 0
+            })
+            this.map.addLayer(imageLayer);
+        }
 
         const canvasLayer = new maptalks.CanvasLayer('c', {
             'forceRenderOnMoving': true,
