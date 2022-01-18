@@ -9,14 +9,17 @@ class SJGMap {
     clusterGroup = [];
 
     defaultOption = {
-        center: [121.2986, 29.1766],
-        zoom: 16.2,
+        center: [121.29701380939446, 29.17802745471883],
+        // zoom: 16.2,
+        zoom: 17.4,
         maxZoom: 18.5,
         fpsOnInteracting: 120,
         attribution: {
             content: "",
         },
         data: [],
+        // pitch: 70,
+        // bearing: 150,
         pitch: 0,
         bearing: 180,
         tiles: '',
@@ -162,21 +165,21 @@ class SJGMap {
 
     constructor(dom, opts = {}) {
         this.option = merge(opts, this.defaultOption);
-        this.option.minZoom = this.option.zoom;
+        // this.option.minZoom = this.option.zoom;
         this.option.maxZoom = this.option.maxZoom;
         this.option.baseLayer = new maptalks.TileLayer("base", {
             urlTemplate: '',
             // "https://wprd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=2&style=8&ltype=10",
             // urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            // urlTemplate:
-            //   "http://wprd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&style=7&x={x}&y={y}&z={z}",
+            urlTemplate:
+                "http://wprd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&style=7&x={x}&y={y}&z={z}",
             // subdomains: ['a', 'b', 'c', 'd'],
             attribution: "",
             opacity: 1,
         });
         this.option.doubleClickZoom = false;
         this.option.zoomInCenter = true;
-        this.option.draggable = false;
+        // this.option.draggable = false;
 
         this.map = new maptalks.Map(dom, this.option);
         this.map.setCursor('move');
@@ -190,14 +193,15 @@ class SJGMap {
         })
 
         this.map.on('zoomend', (evt) => {
-            if (evt.to !== this.option.zoom) {
-                this.map.config('draggable', true);
-            } else {
-                this.map.panTo(this.option.center);
-                this.map.config('draggable', false);
-                this.map.config('zoomOrigin', [960, 540]);
-            }
-            this.drawClusterPoint();
+            console.log('eee', evt)
+            // if (evt.to !== this.option.zoom) {
+            //     this.map.config('draggable', true);
+            // } else {
+            //     this.map.panTo(this.option.center);
+            //     this.map.config('draggable', false);
+            //     this.map.config('zoomOrigin', [960, 540]);
+            // }
+            // this.drawClusterPoint();
         })
 
         const maxExtent = { maxx: 121.316, minx: 121.284, maxy: 29.1867, miny: 29.1685 };
@@ -207,49 +211,57 @@ class SJGMap {
             this.containerPoint = evt.containerPoint;
         })
 
-        this.map.on('mousemove', (evt) => {
-            const currentZoom = this.map.getZoom();
-            if (!this.moving || currentZoom === this.option.zoom) return;
-            const offsetX = evt.containerPoint.x - this.containerPoint.x;
-            const offsetY = evt.containerPoint.y - this.containerPoint.y;
-            const extent = this.map.getExtent();
-            const { xmax, xmin, ymax, ymin } = extent;
-            const { maxx, minx, maxy, miny } = maxExtent;
-            if (xmin < minx && offsetX < 0) {
-                this.map.config('draggable', false);
-                this.map.setMinZoom(currentZoom);
-            } else if (xmax > maxx && offsetX > 0) {
-                this.map.config('draggable', false);
-                this.map.setMinZoom(currentZoom);
-            } else if (ymin < miny && offsetY > 0) {
-                this.map.config('draggable', false);
-                this.map.setMinZoom(currentZoom);
-            } else if (ymax > maxy && offsetY < 0) {
-                this.map.config('draggable', false);
-                this.map.setMinZoom(currentZoom);
-            } else {
-                this.map.config('draggable', true);
-                this.map.setMinZoom(this.option.zoom)
-            }
+        // this.map.on('mousemove', (evt) => {
+        //     const currentZoom = this.map.getZoom();
+        //     if (!this.moving || currentZoom === this.option.zoom) return;
+        //     const offsetX = evt.containerPoint.x - this.containerPoint.x;
+        //     const offsetY = evt.containerPoint.y - this.containerPoint.y;
+        //     const extent = this.map.getExtent();
+        //     const { xmax, xmin, ymax, ymin } = extent;
+        //     const { maxx, minx, maxy, miny } = maxExtent;
+        //     if (xmin < minx && offsetX < 0) {
+        //         this.map.config('draggable', false);
+        //         this.map.setMinZoom(currentZoom);
+        //     } else if (xmax > maxx && offsetX > 0) {
+        //         this.map.config('draggable', false);
+        //         this.map.setMinZoom(currentZoom);
+        //     } else if (ymin < miny && offsetY > 0) {
+        //         this.map.config('draggable', false);
+        //         this.map.setMinZoom(currentZoom);
+        //     } else if (ymax > maxy && offsetY < 0) {
+        //         this.map.config('draggable', false);
+        //         this.map.setMinZoom(currentZoom);
+        //     } else {
+        //         this.map.config('draggable', true);
+        //         this.map.setMinZoom(this.option.zoom)
+        //     }
+        // })
+
+        // const zoomExtent = { maxx: 121.31833942871094, minx: 121.28126057128907, maxy: 29.18670478993019, miny: 29.16849440213477 };
+        // this.map.on('zooming', (evt) => {
+        //     const extent = this.map.getExtent();
+        //     const { xmax, xmin, ymax, ymin } = extent;
+        //     const { maxx, minx, maxy, miny } = zoomExtent;
+        //     if (xmax > maxx) {
+        //         this.map.setMinZoom(evt.to);
+        //     } else if (xmin < minx) {
+        //         this.map.setMinZoom(evt.to);
+        //     } else if (ymax > maxy) {
+        //         this.map.setMinZoom(evt.to);
+        //     } else if (ymin < miny) {
+        //         this.map.setMinZoom(evt.to);
+        //     } else {
+        //         this.map.setMinZoom(this.option.zoom)
+        //     }
+        // })
+
+        this.map.on('moveend', (evt) => {
+            console.log('eee', this.map.getCenter())
         })
 
-        const zoomExtent = { maxx: 121.31833942871094, minx: 121.28126057128907, maxy: 29.18670478993019, miny: 29.16849440213477 };
-        this.map.on('zooming', (evt) => {
-            const extent = this.map.getExtent();
-            const { xmax, xmin, ymax, ymin } = extent;
-            const { maxx, minx, maxy, miny } = zoomExtent;
-            if (xmax > maxx) {
-                this.map.setMinZoom(evt.to);
-            } else if (xmin < minx) {
-                this.map.setMinZoom(evt.to);
-            } else if (ymax > maxy) {
-                this.map.setMinZoom(evt.to);
-            } else if (ymin < miny) {
-                this.map.setMinZoom(evt.to);
-            } else {
-                this.map.setMinZoom(this.option.zoom)
-            }
-        })
+        this.markerLayer = new maptalks.VectorLayer("markers", {
+            zIndex: 1
+        }).addTo(this.map);
 
         this.clusterLayer = new ClusterLayer('cluster', {
             zIndex: 1,
@@ -267,7 +279,7 @@ class SJGMap {
                 'markerHeight': { property: 'count', type: 'interval', stops: [[0, 40], [10, 60], [20, 80]] }
             }],
             'drawClusterText': false,
-            'geometryEvents': true,
+            'geometryEvents': false,
             'single': false
         }).addTo(this.map);
         this.drawClusterPoint();
@@ -296,10 +308,10 @@ class SJGMap {
             }], {
                 forceRenderOnMoving: true,
                 forceRenderOnZooming: true,
-                forceRenderOnRotating: false,
+                // forceRenderOnRotating: true,
                 zIndex: 0
             })
-            this.map.addLayer(imageLayer);
+            // this.map.addLayer(imageLayer);
         }
 
         const canvasLayer = new maptalks.CanvasLayer('c', {
@@ -311,7 +323,7 @@ class SJGMap {
         img2.src = this.option.maskImage;
         const img = document.createElement('img');
         img.src = this.option.backgroundImage;
-        const minZoom = this.option.zoom;
+        // const minZoom = this.option.zoom;
         const centerX = '' + this.option.center[0];
         const centerY = '' + this.option.center[1];
         img.onload = () => {
