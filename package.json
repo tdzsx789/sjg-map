@@ -1,8 +1,8 @@
 {
   "name": "sjgmap",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "moduleName": "sjgmap",
   "files": [
     "dist"

@@ -27,20 +27,20 @@ class Building {
                     textFill: color,
                     textVerticalAlignment: 'middle'
                 },
-                {
-                    'markerType': 'square',
-                    'markerFill': '#ffffff',
-                    'markerFillOpacity': 1,
-                    'markerLineColor': '#ffffff',
-                    'markerLineWidth': 0,
-                    'markerLineOpacity': 0,
-                    'markerLineDasharray': [],
-                    'markerWidth': 80,
-                    'markerHeight': 60,
-                    'markerDx': 0,
-                    'markerDy': 30,
-                    'markerOpacity': 0.01
-                }
+                // {
+                //     'markerType': 'square',
+                //     'markerFill': '#ffffff',
+                //     'markerFillOpacity': 1,
+                //     'markerLineColor': '#ffffff',
+                //     'markerLineWidth': 0,
+                //     'markerLineOpacity': 0,
+                //     'markerLineDasharray': [],
+                //     'markerWidth': 80,
+                //     'markerHeight': 60,
+                //     'markerDx': 0,
+                //     'markerDy': 30,
+                //     'markerOpacity': 0.01
+                // }
             ],
             cursor: 'pointer'
         });

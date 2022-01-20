@@ -31,8 +31,8 @@ export const getMarkerStyle = (point, opts) => {
         }
     } = opts;
 
-    const x = point.coordinate.x.toFixed(decimals);
-    const y = point.coordinate.y.toFixed(decimals);
+    const x = point.gaodeCoordinate.x.toFixed(decimals);
+    const y = point.gaodeCoordinate.y.toFixed(decimals);
 
     let markerFile = null;
     if (images.length > 0) {

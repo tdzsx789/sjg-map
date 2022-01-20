@@ -19,8 +19,8 @@ class Marker {
 
         const { tooltip } = this.__option;
         if (tooltip.show) {
-            const x = point.coordinate.x.toFixed(2);
-            const y = point.coordinate.y.toFixed(2);
+            const x = point.gaodeCoordinate.x.toFixed(2);
+            const y = point.gaodeCoordinate.y.toFixed(2);
             this.origin.setInfoWindow({
                 width: tooltip.width,
                 // minHeight: tooltip.height,
@@ -49,8 +49,8 @@ class Marker {
         if (event === "drag") {
             this.origin.on('dragend', (d) => {
                 if (this.__option.text.show) {
-                    const x = d.coordinate.x.toFixed(this.__option.text.decimals);
-                    const y = d.coordinate.y.toFixed(this.__option.text.decimals);
+                    const x = d.gaodeCoordinate.x.toFixed(this.__option.text.decimals);
+                    const y = d.gaodeCoordinate.y.toFixed(this.__option.text.decimals);
                     this.origin.updateSymbol([
                         {},
                         {

@@ -1,18 +1,22 @@
 import * as maptalks from "maptalks";
+import * as d3 from 'd3';
 import { ClusterLayer } from 'maptalks.markercluster';
 import { merge } from './utils';
 import Marker from './marker';
 import Building from './building';
 import ClusterMarker from './clusterMarker';
+import SyncMap from './syncMap';
 
 class SJGMap {
+    clickable = true;
     clusterGroup = [];
+    markerGroup = [];
+    buildingGroup = [];
 
     defaultOption = {
         center: [121.2986, 29.1766],
         zoom: 16.2,
         maxZoom: 18.5,
-        fpsOnInteracting: 120,
         attribution: {
             content: "",
         },
@@ -22,6 +26,7 @@ class SJGMap {
         tiles: '',
         backgroundImage: '',
         maskImage: '',
+        dynamicHideMarker: false,
         marker: {
             draggable: false,
             style: {
@@ -113,17 +118,31 @@ class SJGMap {
         }
     }
 
-    groups = [];
-
-    clickable = true;
-
     on(event, func) {
         if (event === "click") {
             this.map.on("click", (e) => {
+                this.clickContainerPoint = e.containerPoint;
+                const coordinate = this.map2.containerPointToCoordinate(this.clickContainerPoint);
+                e.gaodeCoordinate = coordinate;
                 if (this.clickable) {
                     func(e);
                 }
             });
+        }
+    }
+
+    showHideMarker(marker) {
+        if (!this.option.dynamicHideMarker) return;
+        const containerExtent = marker.origin.getContainerExtent();
+        console.log('containerExtent', containerExtent)
+        const isIn = d3.polygonContains([
+            [1001, 244], [1812, 376], [935, 968], [96, 624]
+        ], [containerExtent.xmin, containerExtent.ymax]);
+        console.log('marker', marker)
+        if (!isIn) {
+            marker.origin.hide();
+        } else {
+            marker.origin.show();
         }
     }
 
@@ -132,6 +151,7 @@ class SJGMap {
         marker.on('mousedown', () => {
             this.clickable = false;
         })
+        this.markerGroup.push(marker);
         return marker;
     }
 
@@ -140,22 +160,30 @@ class SJGMap {
         build.on('mousedown', () => {
             this.clickable = false;
         })
+        this.buildingGroup.push(build);
         return build;
     }
 
     drawClusterPoint() {
         if (this.clusterTimeout) clearTimeout(this.clusterTimeout);
+        if (this.clusterGroup.length > 0) {
+            this.clusterGroup.forEach((ele) => {
+                ele.origin.remove();
+            })
+            this.clusterGroup = [];
+        }
         this.clusterTimeout = setTimeout(() => {
-            if (this.clusterGroup.length > 0) {
-                this.clusterGroup.forEach((ele) => {
-                    ele.remove();
-                })
-                this.clusterGroup = [];
-            }
             const clusters = this.clusterLayer.getClusters();
             clusters.forEach((ele) => {
                 const marker = new ClusterMarker(ele, this.option, this.buildingLayer, this.map);
-                this.clusterGroup.push(marker.origin);
+                this.clusterGroup.push(marker);
+                this.showHideMarker(marker);
+            })
+            this.markerGroup.forEach((marker) => {
+                this.showHideMarker(marker);
+            })
+            this.buildingGroup.forEach((marker) => {
+                this.showHideMarker(marker);
             })
         }, 300)
     }
@@ -163,7 +191,6 @@ class SJGMap {
     constructor(dom, opts = {}) {
         this.option = merge(opts, this.defaultOption);
         this.option.minZoom = this.option.zoom;
-        this.option.maxZoom = this.option.maxZoom;
         this.option.baseLayer = new maptalks.TileLayer("base", {
             urlTemplate: '',
             // "https://wprd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=2&style=8&ltype=10",
@@ -181,6 +208,8 @@ class SJGMap {
         this.map = new maptalks.Map(dom, this.option);
         this.map.setCursor('move');
 
+        this.map2 = new SyncMap(dom);
+
         this.map.on("mouseup", () => {
             if (this.timeout) clearTimeout(this.timeout);
             this.timeout = setTimeout(() => {
@@ -189,15 +218,47 @@ class SJGMap {
             this.moving = null;
         })
 
+        this.map.on('zoomstart', (evt) => {
+            this.startZoom = evt.from;
+        })
+
         this.map.on('zoomend', (evt) => {
+            const zoomIncrease = evt.to / this.startZoom;
+            const map2Zoom = this.map2.getZoom();
+            const zoom2 = map2Zoom * zoomIncrease;
+            this.map2.setZoom(zoom2);
+
             if (evt.to !== this.option.zoom) {
                 this.map.config('draggable', true);
             } else {
                 this.map.panTo(this.option.center);
                 this.map.config('draggable', false);
-                this.map.config('zoomOrigin', [960, 540]);
             }
             this.drawClusterPoint();
+        })
+
+        this.map.on('movestart', (evt) => {
+            this.startMove = evt.containerPoint;
+        })
+
+        this.map.on('moveend', (evt) => {
+            this.clusterGroup.forEach((marker) => {
+                this.showHideMarker(marker);
+            })
+            this.markerGroup.forEach((marker) => {
+                this.showHideMarker(marker);
+            })
+            this.buildingGroup.forEach((marker) => {
+                this.showHideMarker(marker);
+            })
+
+            const diffX = evt.containerPoint.x - this.startMove.x;
+            const diffY = evt.containerPoint.y - this.startMove.y;
+            const map2center = this.map2.getCenter();
+            const map2centerCantainerPoint = this.map2.coordinateToContainerPoint(map2center);
+            const map2NewContainerPoint = { x: map2centerCantainerPoint.x - diffX, y: map2centerCantainerPoint.y - diffY };
+            const map2NewCenter = this.map2.containerPointToCoordinate(map2NewContainerPoint);
+            this.map2.setCenter(map2NewCenter);
         })
 
         const maxExtent = { maxx: 121.316, minx: 121.284, maxy: 29.1867, miny: 29.1685 };
@@ -254,7 +315,7 @@ class SJGMap {
         this.clusterLayer = new ClusterLayer('cluster', {
             zIndex: 1,
             'noClusterWithOneMarker': true,
-            'maxClusterZoom': 18,
+            'maxClusterZoom': this.option.maxZoom,
             maxClusterRadius: this.option.cluster.clusterRadius,
             'symbol': [{
                 'markerType': 'ellipse',
@@ -275,8 +336,6 @@ class SJGMap {
         const mapExtent = [121.31638, 29.1666, 121.2802, 29.1866];
         const stepX = (mapExtent[2] - mapExtent[0]) / 3;
         const stepY = (mapExtent[3] - mapExtent[1]) / 3;
-
-
 
         const { tiles } = this.option;
         for (let i = 0; i < tiles.length; i++) {
