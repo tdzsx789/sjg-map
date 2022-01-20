@@ -134,11 +134,9 @@ class SJGMap {
     showHideMarker(marker) {
         if (!this.option.dynamicHideMarker) return;
         const containerExtent = marker.origin.getContainerExtent();
-        console.log('containerExtent', containerExtent)
         const isIn = d3.polygonContains([
             [1001, 244], [1812, 376], [935, 968], [96, 624]
         ], [containerExtent.xmin, containerExtent.ymax]);
-        console.log('marker', marker)
         if (!isIn) {
             marker.origin.hide();
         } else {
@@ -374,26 +372,28 @@ class SJGMap {
         const centerX = '' + this.option.center[0];
         const centerY = '' + this.option.center[1];
         img.onload = () => {
-            canvasLayer.draw = function (context) {
-                const size = this.map.getSize();
-                const { width, height } = size;
-                context.drawImage(img, 0, 0, width, height);
-                const currentZoom = this.map.getZoom();
-                if (currentZoom === minZoom) {
-                    const currentCenter = this.map.getCenter();
-                    const currentX = currentCenter.x.toFixed(4);
-                    const currentY = currentCenter.y.toFixed(4);
-                    if (centerX === currentX && centerY === currentY) {
-                        context.drawImage(img2, 108, 44, 1767, 916);
+            img2.onload = () => {
+                canvasLayer.draw = function (context) {
+                    const size = this.map.getSize();
+                    const { width, height } = size;
+                    context.drawImage(img, 0, 0, width, height);
+                    const currentZoom = this.map.getZoom();
+                    if (currentZoom === minZoom) {
+                        const currentCenter = this.map.getCenter();
+                        const currentX = currentCenter.x.toFixed(4);
+                        const currentY = currentCenter.y.toFixed(4);
+                        if (centerX === currentX && centerY === currentY) {
+                            context.drawImage(img2, 108, 44, 1767, 916);
+                        }
                     }
-                }
-                this.completeRender();
-            };
-
-            canvasLayer.drawOnInteracting = function (context) {
-                this.draw(context);
-            };
-            this.map.addLayer(canvasLayer);
+                    this.completeRender();
+                };
+    
+                canvasLayer.drawOnInteracting = function (context) {
+                    this.draw(context);
+                };
+                this.map.addLayer(canvasLayer);
+            }
         }
 
         this.buildingLayer = new maptalks.VectorLayer("buildings", {
