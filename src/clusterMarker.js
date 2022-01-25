@@ -1,4 +1,5 @@
 import * as maptalks from "maptalks";
+import { createHash } from './utils';
 
 class ClusterMarker {
     constructor(point, opts, layer, map) {
@@ -7,18 +8,10 @@ class ClusterMarker {
                 images
             },
             cluster: {
-                style: {
-                    width,
-                    height,
-                    color,
-                    opacity,
-                },
-                text: {
-                    fontFamily,
-                    fontSize,
-                    color: textColor,
-                    opacity: textOpacity,
-                },
+                content,
+                update,
+                dx,
+                dy,
                 line: {
                     color: lineColor,
                     lineWidth,
@@ -35,17 +28,18 @@ class ClusterMarker {
 
         const typeObj = {};
         children.forEach((ele) => {
-            const type = ele.__option.type;
+            const stats = ele.__option.stats === 'alarm' ? '报警' : '';
+            const type = stats + ele.__option.type;
             if (!typeObj[type]) {
-                typeObj[type] = 1;
+                typeObj[type] = [ele.__option];
             } else {
-                typeObj[type] = typeObj[type] + 1;
+                // typeObj[type] = typeObj[type] + 1;
+                typeObj[type].push(ele.__option);
             }
         })
 
         const types = Object.keys(typeObj);
 
-        const totalWidth = width * types.length + 40 + fontSize * 2 * types.length;
         const categories = [
             {
                 markerType: "ellipse",
@@ -56,7 +50,7 @@ class ClusterMarker {
                 markerLineWidth: 0,
                 markerDx: 0,
                 markerDy: 0,
-                markerOpacity: opacity,
+                markerOpacity: lineOpacity,
                 markerHorizontalAlignment: 'middle',
                 markerVerticalAlignment: 'top'
             },
@@ -69,67 +63,52 @@ class ClusterMarker {
                 markerLineWidth: 0,
                 markerDx: 0,
                 markerDy: 0,
-                markerOpacity: opacity,
+                markerOpacity: lineOpacity,
                 markerHorizontalAlignment: 'middle',
                 markerVerticalAlignment: 'top'
             },
-            {
-                markerType: "rectangle",
-                markerFill: color,
-                markerWidth: totalWidth,
-                markerHeight: width + 10,
-                markerLineColor: lineColor,
-                markerLineWidth: 1,
-                markerDx: 0,
-                markerDy: -lineHeight,
-                markerOpacity: opacity,
-                markerHorizontalAlignment: 'middle',
-                markerVerticalAlignment: 'top'
-            }
         ]
 
-        let markerFile = null;
-        if (images.length > 0) {
-            if (point.type) {
-                const currentEle = images.find((ele) => ele.type === point.type);
-                const alarmUrl = currentEle.alarm || currentEle.url;
-                markerFile = point.stats === 'alarm' ? alarmUrl : currentEle.url;
-            } else {
-                markerFile = images[0].url;
+        const points = types.map((ele) => {
+            const split = ele.split('报警');
+            const name = split.length > 1 ? split[1] : ele;
+            const stats = split.length > 1 ? 'alarm' : 'normal';
+            let url = null;
+            if (images.length > 0) {
+                const currentEle = images.find((ele) => ele.type === name);
+                if (currentEle) {
+                    url = split.length > 1 ? currentEle.alarm : currentEle.url;
+                } else {
+                    url = images[0].url;
+                }
             }
+            const hash = createHash(8);
+            const children = typeObj[ele];
+            return {
+                id: name + hash,
+                name,
+                url,
+                stats,
+                children
+            }
+        });
+
+        if (content) {
+            const dom = content(points);
+            this.content = new maptalks.ui.UIMarker(coordCenter, {
+                'draggable': false,
+                'single': false,
+                'content': dom,
+                dx,
+                'dy': -lineHeight + dy,
+                zIndex: 99
+            });
+            this.content.addTo(layer);
         }
 
-        const firstPos = - totalWidth / 2 + 20 + width / 2;
-        types.forEach((ele, i) => {
-            const fontNum = typeObj[ele] > 9 ? 2 : 1;
-            const fontWidth = fontSize * (1 + fontNum);
-            categories.push({
-                'markerType': 'ellipse',
-                'markerLineColor': '#000000',
-                'markerLineWidth': 0,
-                'markerLineOpacity': 0,
-                'markerLineDasharray': [],
-                'markerWidth': width,
-                'markerHeight': height,
-                'markerDx': firstPos + (width + fontWidth) * i,
-                'markerDy': -lineHeight - 5,
-                'markerOpacity': 1,
-                markerHorizontalAlignment: 'middle',
-                markerVerticalAlignment: 'top',
-                markerFile,
-                'textFaceName': fontFamily,
-                'textName': `x${typeObj[ele]}`,
-                'textSize': fontSize,
-                'textFill': textColor,
-                'textOpacity': textOpacity,
-                'textDx': firstPos + width + (width + fontWidth) * i,
-                'textDy': -lineHeight - 5 - (height - fontSize) / 2,
-                'textHorizontalAlignment': 'middle',
-                'textVerticalAlignment': 'top',
-                'textAlign': 'center',
-                markerOpacity: opacity,
-            });
-        })
+        if (update) {
+            const func = update(points);
+        }
 
         this.origin = new maptalks.Marker(coordCenter, {
             id: Math.random(),

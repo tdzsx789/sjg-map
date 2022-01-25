@@ -45,8 +45,7 @@ class SJGMap {
                 lineHeight: '30px',
                 fontFamily: 'Alibaba-PuHuiTi-Regular',
                 alarm: "rgb(252,68,70)",
-                normal: "rgb(45,254,252)",
-                content: undefined
+                normal: "rgb(45,254,252)"
             },
             line: {
                 show: true,
@@ -73,10 +72,12 @@ class SJGMap {
         },
         cluster: {
             clusterRadius: 40,
-            content: undefined,
-            update: undefined,
-            dx: 0,
-            dy: 0,
+            style: {
+                width: 30,
+                height: 30,
+                opacity: 1,
+                color: 'rgba(24,58,96,0.7)',
+            },
             line: {
                 color: "rgb(34,195,252)",
                 lineWidth: 2,
@@ -84,9 +85,14 @@ class SJGMap {
                 opacity: 1,
                 pointSize: 8
             },
+            text: {
+                fontFamily: 'PingfangSC',
+                fontSize: 20,
+                color: "#ffffff",
+                opacity: 1,
+            },
         },
         building: {
-            content: undefined,
             style: {
                 fontFamily: 'Alibaba-PuHuiTi-Regular',
                 fontSize: 14,
@@ -160,7 +166,6 @@ class SJGMap {
         if (this.clusterTimeout) clearTimeout(this.clusterTimeout);
         if (this.clusterGroup.length > 0) {
             this.clusterGroup.forEach((ele) => {
-                if (ele.content) ele.content.remove();
                 ele.origin.remove();
             })
             this.clusterGroup = [];
@@ -196,7 +201,7 @@ class SJGMap {
         });
         this.option.doubleClickZoom = false;
         this.option.zoomInCenter = true;
-        // this.option.draggable = false;
+        this.option.draggable = false;
 
         this.map = new maptalks.Map(dom, this.option);
         this.map.setCursor('move');
@@ -221,12 +226,12 @@ class SJGMap {
             const zoom2 = map2Zoom * zoomIncrease;
             this.map2.setZoom(zoom2);
 
-            // if (evt.to !== this.option.zoom) {
-            //     this.map.config('draggable', true);
-            // } else {
-            //     this.map.panTo(this.option.center);
-            //     this.map.config('draggable', false);
-            // }
+            if (evt.to !== this.option.zoom) {
+                this.map.config('draggable', true);
+            } else {
+                this.map.panTo(this.option.center);
+                this.map.config('draggable', false);
+            }
             this.drawClusterPoint();
         })
 
@@ -245,68 +250,65 @@ class SJGMap {
                 this.showHideMarker(marker);
             })
 
-            if (this.startMove) {
-                const diffX = evt.containerPoint.x - this.startMove.x;
-                const diffY = evt.containerPoint.y - this.startMove.y;
-                const map2center = this.map2.getCenter();
-                const map2centerCantainerPoint = this.map2.coordinateToContainerPoint(map2center);
-                const map2NewContainerPoint = { x: map2centerCantainerPoint.x - diffX, y: map2centerCantainerPoint.y - diffY };
-                const map2NewCenter = this.map2.containerPointToCoordinate(map2NewContainerPoint);
-                this.map2.setCenter(map2NewCenter);
+            const diffX = evt.containerPoint.x - this.startMove.x;
+            const diffY = evt.containerPoint.y - this.startMove.y;
+            const map2center = this.map2.getCenter();
+            const map2centerCantainerPoint = this.map2.coordinateToContainerPoint(map2center);
+            const map2NewContainerPoint = { x: map2centerCantainerPoint.x - diffX, y: map2centerCantainerPoint.y - diffY };
+            const map2NewCenter = this.map2.containerPointToCoordinate(map2NewContainerPoint);
+            this.map2.setCenter(map2NewCenter);
+        })
+
+        const maxExtent = { maxx: 121.316, minx: 121.284, maxy: 29.1867, miny: 29.1685 };
+
+        this.map.on('mousedown', (evt) => {
+            this.moving = true;
+            this.containerPoint = evt.containerPoint;
+        })
+
+        this.map.on('mousemove', (evt) => {
+            const currentZoom = this.map.getZoom();
+            if (!this.moving || currentZoom === this.option.zoom) return;
+            const offsetX = evt.containerPoint.x - this.containerPoint.x;
+            const offsetY = evt.containerPoint.y - this.containerPoint.y;
+            const extent = this.map.getExtent();
+            const { xmax, xmin, ymax, ymin } = extent;
+            const { maxx, minx, maxy, miny } = maxExtent;
+            if (xmin < minx && offsetX < 0) {
+                this.map.config('draggable', false);
+                this.map.setMinZoom(currentZoom);
+            } else if (xmax > maxx && offsetX > 0) {
+                this.map.config('draggable', false);
+                this.map.setMinZoom(currentZoom);
+            } else if (ymin < miny && offsetY > 0) {
+                this.map.config('draggable', false);
+                this.map.setMinZoom(currentZoom);
+            } else if (ymax > maxy && offsetY < 0) {
+                this.map.config('draggable', false);
+                this.map.setMinZoom(currentZoom);
+            } else {
+                this.map.config('draggable', true);
+                this.map.setMinZoom(this.option.zoom)
             }
         })
 
-        // const maxExtent = { maxx: 121.316, minx: 121.284, maxy: 29.1867, miny: 29.1685 };
-
-        // this.map.on('mousedown', (evt) => {
-        //     this.moving = true;
-        //     this.containerPoint = evt.containerPoint;
-        // })
-
-        // this.map.on('mousemove', (evt) => {
-        //     const currentZoom = this.map.getZoom();
-        //     if (!this.moving || currentZoom === this.option.zoom) return;
-        //     const offsetX = evt.containerPoint.x - this.containerPoint.x;
-        //     const offsetY = evt.containerPoint.y - this.containerPoint.y;
-        //     const extent = this.map.getExtent();
-        //     const { xmax, xmin, ymax, ymin } = extent;
-        //     const { maxx, minx, maxy, miny } = maxExtent;
-
-        //     if (xmin < minx && offsetX <= 0) {
-        //         this.map.config('draggable', false);
-        //         this.map.setMinZoom(currentZoom);
-        //     } else if (xmax > maxx && offsetX >= 0) {
-        //         this.map.config('draggable', false);
-        //         this.map.setMinZoom(currentZoom);
-        //     } else if (ymin < miny && offsetY >= 0) {
-        //         this.map.config('draggable', false);
-        //         this.map.setMinZoom(currentZoom);
-        //     } else if (ymax > maxy && offsetY <= 0) {
-        //         this.map.config('draggable', false);
-        //         this.map.setMinZoom(currentZoom);
-        //     } else {
-        //         this.map.config('draggable', true);
-        //         this.map.setMinZoom(this.option.zoom)
-        //     }
-        // })
-
-        // const zoomExtent = { maxx: 121.31833942871094, minx: 121.28126057128907, maxy: 29.18670478993019, miny: 29.16849440213477 };
-        // this.map.on('zooming', (evt) => {
-        //     const extent = this.map.getExtent();
-        //     const { xmax, xmin, ymax, ymin } = extent;
-        //     const { maxx, minx, maxy, miny } = zoomExtent;
-        //     if (xmax > maxx) {
-        //         this.map.setMinZoom(evt.to);
-        //     } else if (xmin < minx) {
-        //         this.map.setMinZoom(evt.to);
-        //     } else if (ymax > maxy) {
-        //         this.map.setMinZoom(evt.to);
-        //     } else if (ymin < miny) {
-        //         this.map.setMinZoom(evt.to);
-        //     } else {
-        //         this.map.setMinZoom(this.option.zoom)
-        //     }
-        // })
+        const zoomExtent = { maxx: 121.31833942871094, minx: 121.28126057128907, maxy: 29.18670478993019, miny: 29.16849440213477 };
+        this.map.on('zooming', (evt) => {
+            const extent = this.map.getExtent();
+            const { xmax, xmin, ymax, ymin } = extent;
+            const { maxx, minx, maxy, miny } = zoomExtent;
+            if (xmax > maxx) {
+                this.map.setMinZoom(evt.to);
+            } else if (xmin < minx) {
+                this.map.setMinZoom(evt.to);
+            } else if (ymax > maxy) {
+                this.map.setMinZoom(evt.to);
+            } else if (ymin < miny) {
+                this.map.setMinZoom(evt.to);
+            } else {
+                this.map.setMinZoom(this.option.zoom)
+            }
+        })
 
         this.clusterLayer = new ClusterLayer('cluster', {
             zIndex: 1,
@@ -386,7 +388,7 @@ class SJGMap {
                     }
                     this.completeRender();
                 };
-
+    
                 canvasLayer.drawOnInteracting = function (context) {
                     this.draw(context);
                 };

@@ -1,6 +1,7 @@
 import * as maptalks from "maptalks";
 import { getMarkerStyle } from './func';
 import tooptipImage from './asset/tooltip.png';
+import { isFunction } from "./utils";
 
 class Marker {
     constructor(point, opts, layer) {
@@ -21,26 +22,35 @@ class Marker {
         if (tooltip.show) {
             const x = point.gaodeCoordinate.x.toFixed(2);
             const y = point.gaodeCoordinate.y.toFixed(2);
+            let content = `<div style="background-image: url(${tooptipImage});  width: ${tooltip.width}px;height: ${tooltip.height}px;background-repeat: no-repeat;background-size: 100% 100%;
+            box-sizing: border-box;color: ${tooltip.color};font-size: ${tooltip.fontSize}; padding: ${tooltip.padding};line-height: ${tooltip.lineHeight};font-family: ${tooltip.fontFamily};">
+            <div style="display: flex;">
+                <div style="margin-right: 8px;">类型:</div>
+                <div>${point.type}</div>
+            </div>
+            <div style="display: flex;">
+                <div style="margin-right: 8px;">状态:</div>
+                <div style="color: ${point.stats === 'alarm' ? tooltip.alarm : tooltip.normal};">${point.stats === 'alarm' ? '异常' : '正常'}</div>
+            </div>
+            <div style="display: flex;">
+                <div style="margin-right: 4px;">经纬度:</div>
+                <div>${x}, ${y}</div>
+            </div>
+            </div>`
+
+            if (tooltip.content && isFunction(tooltip.content)) {
+                content = tooltip.content(point);
+            }
+
             this.origin.setInfoWindow({
+                custom: true,
                 width: tooltip.width,
+                'dx' : 0,
+                'dy' : 0,
                 // minHeight: tooltip.height,
                 autoOpenOn: 'click',
                 autoCloseOn: 'click',
-                content: `<div style="background-image: url(${tooptipImage});  width: ${tooltip.width}px;height: ${tooltip.height}px;background-repeat: no-repeat;background-size: 100% 100%;
-                box-sizing: border-box;color: ${tooltip.color};font-size: ${tooltip.fontSize}; padding: ${tooltip.padding};line-height: ${tooltip.lineHeight};font-family: ${tooltip.fontFamily};">
-                <div style="display: flex;">
-                    <div style="margin-right: 8px;">类型:</div>
-                    <div>${point.type}</div>
-                </div>
-                <div style="display: flex;">
-                    <div style="margin-right: 8px;">状态:</div>
-                    <div style="color: ${point.stats === 'alarm' ? tooltip.alarm : tooltip.normal};">${point.stats === 'alarm' ? '异常' : '正常'}</div>
-                </div>
-                <div style="display: flex;">
-                    <div style="margin-right: 4px;">经纬度:</div>
-                    <div>${x}, ${y}</div>
-                </div>
-                </div>`
+                content
             });
         }
     }
