@@ -17,6 +17,7 @@ class SJGMap {
         center: [121.2986, 29.1766],
         zoom: 16.2,
         maxZoom: 18.5,
+        clusterZoom: 18.5,
         attribution: {
             content: "",
         },
@@ -39,13 +40,6 @@ class SJGMap {
                 show: true,
                 width: 189,
                 height: 124,
-                color: '#ffffff',
-                fontSize: '16px',
-                padding: '16px 0px 16px 26px',
-                lineHeight: '30px',
-                fontFamily: 'Alibaba-PuHuiTi-Regular',
-                alarm: "rgb(252,68,70)",
-                normal: "rgb(45,254,252)",
                 content: undefined
             },
             line: {
@@ -87,6 +81,7 @@ class SJGMap {
         },
         building: {
             content: undefined,
+            update: undefined,
             style: {
                 fontFamily: 'Alibaba-PuHuiTi-Regular',
                 fontSize: 14,
@@ -97,18 +92,8 @@ class SJGMap {
                 height: 40,
                 draggable: false
             },
-            tooltip: {
-                show: true,
-                width: 189,
-                height: 92,
-                color: '#ffffff',
-                fontSize: '16px',
-                padding: '16px 0px 16px 26px',
-                lineHeight: '30px',
-                fontFamily: 'Alibaba-PuHuiTi-Regular',
-                alarm: "rgb(252,68,70)",
-                normal: "rgb(45,254,252)"
-            }
+            dx: 0,
+            dy: 0
         }
     }
 
@@ -311,7 +296,7 @@ class SJGMap {
         this.clusterLayer = new ClusterLayer('cluster', {
             zIndex: 1,
             'noClusterWithOneMarker': true,
-            'maxClusterZoom': this.option.maxZoom,
+            'maxClusterZoom': this.option.clusterZoom,
             maxClusterRadius: this.option.cluster.clusterRadius,
             'symbol': [{
                 'markerType': 'ellipse',

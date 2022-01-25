@@ -33,7 +33,6 @@ class ClusterMarker {
             if (!typeObj[type]) {
                 typeObj[type] = [ele.__option];
             } else {
-                // typeObj[type] = typeObj[type] + 1;
                 typeObj[type].push(ele.__option);
             }
         })

@@ -4,31 +4,36 @@ import Point from './point';
 class Layer {
     constructor(params, data, buildingLayer, option) {
         const { layers } = data;
-        const w = 30;
-        const h = 50;
+        const w = 480;
+        const h = 360;
 
         const fl = params.floor - 1 || 0;
         const currentLayer = fl < 0 ? 0 : fl;
 
         const eachFloorNum = layers.length > 3 ? 3 : layers.length;
-        const padding = (100 - w * eachFloorNum) / (eachFloorNum * 2);
+        const padding = (1920 - w * eachFloorNum) / (eachFloorNum * 2);
 
         let left = padding + (w + padding * 2) * (currentLayer % 3);
-        let top = 0;
+        let top = 540 - h / 2;
         if (layers.length > 3) {
             const level = Math.floor(currentLayer / 3);
-            top = level * h;
+            top = 540 - level * h;
+            if (currentLayer > 2) {
+                const topLayer = currentLayer - 3;
+                const secondFloorNum = layers.length - 3;
+                const secondFloorPadding = (1920 - w * secondFloorNum) / (secondFloorNum * 2);
+                left = secondFloorPadding + (w + secondFloorPadding * 2) * (topLayer % 3);
+            }
         }
 
         this.origin = buildingLayer.append('div')
             .style('position', 'absolute')
-            .style('left', `${left}%`)
-            .style('top', `${top}%`)
-            .style('width', `${w}%`)
-            .style('height', `${h}%`)
+            .style('left', `${920 - w / 2}px`)
+            .style('top', `${top}px`)
+            .style('width', `${w}px`)
+            .style('height', `${h}px`)
             .style('background-image', `url(${params.url})`)
-            .style('background-size', '100% auto')
-            .style('background-position', 'center')
+            .style('background-size', '100% 100%')
             .style('background-repeat', 'no-repeat')
             .on('mousedown', (evt) => {
                 evt.stopPropagation();
@@ -51,20 +56,32 @@ class Layer {
             .style('font-weight', 'bolder')
             .style('font-size', '24px');
 
+        if (layers.length > 1) {
+            anime({
+                targets: this.origin.node(),
+                left: `${left}px`,
+                duration: 500,
+                easing: 'linear',
+                begin: () => {
+                    this.isClickable = false;
+                },
+                complete: () => {
+                    this.isClickable = true;
+                }
+            })
+        }
+
         this.__option = option;
     }
 
     on(event, func) {
         this.origin.on(event, (evt) => {
             evt.stopPropagation();
-            const boundings = this.origin.node().getBoundingClientRect();
-            const xPos = evt.offsetX / boundings.width;
-            const yPos = evt.offsetY / boundings.height;
             if (this.isClickable) {
                 func({
                     coordinate: {
-                        x: xPos * 100,
-                        y: yPos * 100
+                        x: evt.offsetX,
+                        y: evt.offsetY
                     }
                 });
             }
