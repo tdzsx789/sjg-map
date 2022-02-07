@@ -21,7 +21,10 @@ class SyncMap {
                     "",
                 attribution: "",
                 opacity: 0,
-            })
+            }),
+            zoomAnimation:false,
+            hitDetect: false,
+            layerCanvasLimitOnInteracting: true,
         })
         return map;
     }
