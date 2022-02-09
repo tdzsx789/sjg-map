@@ -18,6 +18,7 @@ class SJGMap {
         zoom: 16.2,
         maxZoom: 18.5,
         clusterZoom: 18.5,
+        // fpsOnInteracting: 60,
         attribution: {
             content: "",
         },
@@ -133,7 +134,7 @@ class SJGMap {
     }
 
     addBuilding(data) {
-        const build = new Building(data, this.option, this.buildingLayer);
+        const build = new Building(data, this.option, this.buildingLayer, this.__dom);
         build.on('mousedown', () => {
             this.clickable = false;
         })
@@ -167,6 +168,8 @@ class SJGMap {
     }
 
     constructor(dom, opts = {}) {
+        this.__dom = dom;
+
         this.option = merge(opts, this.defaultOption);
         this.option.minZoom = this.option.zoom;
         this.option.baseLayer = new maptalks.TileLayer("base", {
@@ -287,7 +290,7 @@ class SJGMap {
         })
         this.map.addLayer(imageLayer);
 
-        const maxExtent = new maptalks.Extent(mapExtent);
+        const maxExtent = new maptalks.Extent([121.316, 29.1686, 121.284, 29.1846]);
 
         this.preCenter = this.map.getCenter();
         this.map.on('moving', (e) => {
@@ -295,20 +298,18 @@ class SJGMap {
                 this.map.setCenter(this.preCenter);
                 return;
             }
-            // this.map.setMinZoom(16.5);
+            this.map.setMinZoom(16.5);
             this.preCenter = this.map.getCenter();
         });
 
-        // this.preZoom = this.map.getZoom();
-        // this.map.on('zooming', (e) => {
-        //     if (!this.map.getExtent().within(maxExtent)) {
-        //         console.log('zzzzz')
-        //         // this.map.setZoom(this.preZoom);
-        //         this.map.setMinZoom(this.preZoom);
-        //         return;
-        //     }
-        //     this.preZoom = this.map.getZoom();
-        // })
+        this.preZoom = this.map.getZoom();
+        this.map.on('zooming', (e) => {
+            if (!this.map.getExtent().within(maxExtent)) {
+                this.map.setMinZoom(this.preZoom);
+                return;
+            }
+            this.preZoom = this.map.getZoom();
+        })
 
         const canvasLayer = new maptalks.CanvasLayer('c', {
             forceRenderOnMoving: true,

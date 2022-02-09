@@ -111,10 +111,10 @@ class Point {
         if (event === 'drag') {
             this.__pointNode.on('mouseup', (evt) => {
                 evt.stopPropagation();
+                this.position = null;
                 if (!this.mousedownPosition) return;
                 const { x, y } = this.mousedownPosition;
                 if (x === evt.pageX && y === evt.pageY) return;
-                this.position = null;
                 d3.selectAll('.pointer').style('pointer-events', 'auto');
                 func(this.__params);
             });

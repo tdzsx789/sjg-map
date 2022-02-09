@@ -4,7 +4,7 @@ import Layer from './layer';
 import { createHash } from './utils';
 
 class Building {
-    constructor(params, option, layer) {
+    constructor(params, option, layer, __dom) {
         const {
             building: {
                 content,
@@ -18,6 +18,39 @@ class Building {
         } = option;
         const { name, coordinate, layers } = params;
 
+        const points = this.getPoints(layers, images);
+        params.points = points;
+
+        if (content) {
+            const dom = content(params);
+            this.origin = new maptalks.ui.UIMarker(coordinate, {
+                id: name ? name + Math.random() : Math.random(),
+                'draggable': false,
+                'single': false,
+                'content': dom,
+                cursor: 'pointer',
+                dx,
+                dy
+            });
+            this.origin.addTo(layer);
+        }
+
+        if (update) {
+            const func = update(points);
+        }
+
+        this.__params = params;
+        this.__option = option;
+        this.__dom = __dom;
+        this.__content = content;
+    }
+
+    addLayer(ele) {
+        const currentLayer = new Layer(ele, this.__params, this.buildingLayer, this.__option);
+        return currentLayer;
+    }
+
+    getPoints(layers, images) {
         const totalPoints = [];
         layers.forEach((ele) => {
             totalPoints.push(...ele.points);
@@ -58,77 +91,73 @@ class Building {
                 children
             }
         });
-        params.points = points;
-
-        if (content) {
-            const dom = content(params);
-            this.origin = new maptalks.ui.UIMarker(coordinate, {
-                id: name ? name + Math.random() : Math.random(),
-                'draggable': false,
-                'single': false,
-                'content': dom,
-                cursor: 'pointer',
-                dx,
-                dy
-            });
-            this.origin.addTo(layer);
-        }
-
-        if (update) {
-            const func = update(points);
-        }
-
-        this.__params = params;
-        this.__option = option;
+        return points;
     }
 
-    addLayer(ele) {
-        const currentLayer = new Layer(ele, this.__params, this.buildingLayer, this.__option);
-        return currentLayer;
+    updateData(data) {
+        const {
+            building: {
+                content
+            },
+            marker: {
+                images
+            },
+        } = this.__option;
+        const points = this.getPoints(data.layers, images);
+        data.points = points;
+
+        if (content) {
+            const dom = content(data);
+            this.origin.setContent(dom);
+        }
     }
 
     on(event, func) {
+        const container = d3.select(this.__dom);
         if (!this.origin) return;
+        if (event === 'close') {
+            const cross = container.append('div')
+                .attr('id', 'buildingClose')
+                .style('width', '20px')
+                .style('height', '20px')
+                .style('line-height', '18px')
+                .style('position', 'absolute')
+                .style('right', '20px')
+                .style('top', '20px')
+                .style('cursor', 'pointer')
+                .style('color', '#ffffff')
+                .style('border', '1px #ffffff solid')
+                .style('text-align', 'center')
+                .style('text-align', 'center')
+                .style('z-index', 999)
+                .style('opacity', 0)
+                .style('border-radius', '4px')
+                .html('x')
+                .on('mouseover', () => {
+                    cross.style('background', 'rgba(255,255,255,0.4)')
+                })
+                .on('mouseout', () => {
+                    cross.style('background', 'transparent')
+                })
+                .on('click', (evt) => {
+                    evt.stopPropagation();
+                    d3.select('#buildingClose').style('opacity', 0);
+                    this.buildingLayer.remove();
+                    func();
+                })
+        }
+
         this.origin.on(event, (d) => {
             if (event === 'click') {
-                this.buildingLayer = d3.select('body')
-                    .append('div')
+                this.buildingLayer = container.append('div')
                     .style('width', '100%')
                     .style('height', '100%')
                     .style('position', 'absolute')
                     .style('left', 0)
                     .style('top', 0)
                     .style('background-color', 'rgba(0,0,0,0.7)')
-                    .style('overflow', 'auto')
-                    .on('mousedown', () => {
-                        this.buildingLayer.remove();
-                    });
-
-                const cross = this.buildingLayer.append('div')
-                    .style('width', '20px')
-                    .style('height', '20px')
-                    .style('line-height', '18px')
-                    .style('position', 'absolute')
-                    .style('right', '20px')
-                    .style('top', '20px')
-                    .style('cursor', 'pointer')
-                    .style('color', '#ffffff')
-                    .style('border', '1px #ffffff solid')
-                    .style('text-align', 'center')
-                    .style('text-align', 'center')
-                    .style('z-index', 999)
-                    .style('border-radius', '4px')
-                    .html('x')
-                    .on('mouseover', () => {
-                        cross.style('background', 'rgba(255,255,255,0.4)')
-                    })
-                    .on('mouseout', () => {
-                        cross.style('background', 'transparent')
-                    })
-                    .on('click', () => {
-                        this.buildingLayer.remove();
-                    })
-
+                    .style('overflow', 'auto');
+                d3.select('#buildingClose').style('opacity', 1);
                 func(d);
             } else {
                 func(d);

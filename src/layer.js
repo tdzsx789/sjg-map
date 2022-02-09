@@ -25,11 +25,12 @@ class Layer {
             .style('left', `${left}%`)
             .style('top', `${top}%`)
             .style('width', `${w}%`)
-            .style('height', `${h}%`)
-            .style('background-image', `url(${params.url})`)
-            .style('background-size', '100% auto')
-            .style('background-position', 'center')
-            .style('background-repeat', 'no-repeat')
+            .style('transform', 'translate(0, 25%)')
+            // .style('height', `${h}%`)
+            // .style('background-image', `url(${params.url})`)
+            // .style('background-size', '100% auto')
+            // .style('background-position', 'center')
+            // .style('background-repeat', 'no-repeat')
             .on('mousedown', (evt) => {
                 evt.stopPropagation();
                 if (window.tooltip) {
@@ -40,6 +41,11 @@ class Layer {
                     this.isClickable = true;
                 }
             })
+
+        const image = this.origin.append('img')
+            .attr('src', params.url)
+            .style('width', '100%')
+            .style('height', '100%');
 
         this.origin.append('div')
             .html(`${params.floor}层`)
