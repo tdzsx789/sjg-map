@@ -4,7 +4,7 @@ import Layer from './layer';
 import { createHash } from './utils';
 
 class Building {
-    constructor(params, option, layer, __dom) {
+    constructor(params, option, layer) {
         const {
             building: {
                 content,
@@ -41,7 +41,6 @@ class Building {
 
         this.__params = params;
         this.__option = option;
-        this.__dom = __dom;
         this.__content = content;
     }
 
@@ -113,7 +112,9 @@ class Building {
     }
 
     on(event, func) {
-        const container = d3.select(this.__dom);
+        const { nodeId, className } = this.__option.building.mask;
+        console.log('nodeId', nodeId, className)
+        const container = d3.select(nodeId);
         if (!this.origin) return;
         if (event === 'close') {
             const cross = container.append('div')
@@ -129,7 +130,7 @@ class Building {
                 .style('border', '1px #ffffff solid')
                 .style('text-align', 'center')
                 .style('text-align', 'center')
-                .style('z-index', 999)
+                .style('z-index', 9999)
                 .style('opacity', 0)
                 .style('border-radius', '4px')
                 .html('x')
@@ -150,13 +151,15 @@ class Building {
         this.origin.on(event, (d) => {
             if (event === 'click') {
                 this.buildingLayer = container.append('div')
+                    .attr('class', className)
                     .style('width', '100%')
                     .style('height', '100%')
                     .style('position', 'absolute')
                     .style('left', 0)
                     .style('top', 0)
+                    .style('z-index', 9998)
                     .style('background-color', 'rgba(0,0,0,0.7)')
-                    .style('overflow', 'auto');
+                    .style('overflow', 'hidden');
                 d3.select('#buildingClose').style('opacity', 1);
                 func(d);
             } else {

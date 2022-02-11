@@ -36,6 +36,10 @@ class Marker {
                 autoCloseOn: 'click',
                 content
             });
+
+            if (tooltip.update) {
+                const func = tooltip.update(point);
+            }
         }
     }
 

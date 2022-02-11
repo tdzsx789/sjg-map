@@ -81,6 +81,10 @@ class SJGMap {
             },
         },
         building: {
+            mask: {
+                className: undefined,
+                nodeId: undefined,
+            },
             content: undefined,
             update: undefined,
             style: {
@@ -130,11 +134,12 @@ class SJGMap {
             this.clickable = false;
         })
         this.markerGroup.push(marker);
+        this.drawClusterPoint();
         return marker;
     }
 
     addBuilding(data) {
-        const build = new Building(data, this.option, this.buildingLayer, this.__dom);
+        const build = new Building(data, this.option, this.buildingLayer);
         build.on('mousedown', () => {
             this.clickable = false;
         })
@@ -161,15 +166,13 @@ class SJGMap {
             this.markerGroup.forEach((marker) => {
                 this.showHideMarker(marker);
             })
-            this.buildingGroup.forEach((marker) => {
-                this.showHideMarker(marker);
-            })
+            // this.buildingGroup.forEach((marker) => {
+            //     this.showHideMarker(marker);
+            // })
         }, 300)
     }
 
     constructor(dom, opts = {}) {
-        this.__dom = dom;
-
         this.option = merge(opts, this.defaultOption);
         this.option.minZoom = this.option.zoom;
         this.option.baseLayer = new maptalks.TileLayer("base", {
@@ -223,9 +226,9 @@ class SJGMap {
             this.markerGroup.forEach((marker) => {
                 this.showHideMarker(marker);
             })
-            this.buildingGroup.forEach((marker) => {
-                this.showHideMarker(marker);
-            })
+            // this.buildingGroup.forEach((marker) => {
+            //     this.showHideMarker(marker);
+            // })
 
             if (this.startMove) {
                 const diffX = evt.containerPoint.x - this.startMove.x;
@@ -257,7 +260,6 @@ class SJGMap {
             'geometryEvents': true,
             'single': false
         }).addTo(this.map);
-        this.drawClusterPoint();
 
         const mapExtent = [121.31638, 29.1666, 121.2802, 29.1866];
         const stepX = (mapExtent[2] - mapExtent[0]) / 2;
