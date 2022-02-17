@@ -23,7 +23,6 @@ class SJGMap {
         panAnimation: false,
         panAnimationDuration: 0,
         viewHistory: false,
-        dragPan: true,
         dragRotate: false,
         dragPitch: false,
         fog: false,
@@ -129,27 +128,34 @@ class SJGMap {
     add(point) {
         const marker = new Marker(point, this.option, this.clusterLayer,
             (marker) => {
+                marker.calcuMarker.remove();
                 marker.origin.remove();
                 this.drawClusterPoint();
             },
             (event, func, marker) => {
                 if (event === "drag") {
                     marker.origin.on('dragend', (d) => {
-                        const coord =  marker.origin.getCoordinates();
+                        const coord = marker.origin.getCoordinates();
                         marker.calcuMarker.setCoordinates(coord);
-                        d.coordinate =coord;
+                        d.coordinate = coord;
                         func(d);
                         this.drawClusterPoint();
+                        marker.infoWindow.on('showend', (e) => {
+                            const infoDom = marker.infoWindow.getDOM();
+                            infoDom.style.zIndex = 999;
+                            this.clickable = false;
+                        })
+                        marker.infoWindow.on('hide', () => {
+                            this.clickable = true;
+                        })
                     })
                 } else {
                     marker.origin.on(event, (d) => {
+                        this.clickable = false;
                         func(d);
                     })
                 }
             });
-        marker.on('mousedown', () => {
-            this.clickable = false;
-        })
         this.markerGroup.push(marker);
         this.drawClusterPoint();
         return marker;
@@ -254,11 +260,6 @@ class SJGMap {
                 const map2NewCenter = this.map2.containerPointToCoordinate(map2NewContainerPoint);
                 this.map2.setCenter(map2NewCenter);
             }
-
-            if (this.timeout) clearTimeout(this.timeout);
-            this.timeout = setTimeout(() => {
-                this.clickable = true;
-            }, 10);
         })
 
         this.map.on('zoomstart', (evt) => {
@@ -330,13 +331,14 @@ class SJGMap {
 
         // const mapExtent = [121.31638, 29.1666, 121.2802, 29.1866];
         const maxExtent = new maptalks.Extent([121.31628, 29.1671, 121.2812, 29.1861]);
-        this.map.getLayer('v')
-        const vlayer = new maptalks.VectorLayer('v').addTo(this.map);
-        vlayer.addGeometry(
-            new maptalks.Polygon(maxExtent.toArray(), {
-                symbol: { 'polygonOpacity': 0, 'lineWidth': 5, 'lineColor': 'red' }
-            })
-        );
+
+        // this.map.getLayer('v')
+        // const vlayer = new maptalks.VectorLayer('v').addTo(this.map);
+        // vlayer.addGeometry(
+        //     new maptalks.Polygon(maxExtent.toArray(), {
+        //         symbol: { 'polygonOpacity': 0, 'lineWidth': 5, 'lineColor': 'red' }
+        //     })
+        // );
 
         this.preCenter = this.map.getCenter();
         this.currentExtent = this.map.getExtent();

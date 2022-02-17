@@ -37,7 +37,7 @@ class CalcuMarker {
             'single': false,
             'content': '',
             dx: 0,
-            dy: - height / 2
+            dy: - height / 2,
         });
         this.origin.addTo(layer);
         this.calcuMarker.uimarker = this.origin;
@@ -53,18 +53,18 @@ class CalcuMarker {
                 content = tooltip.content(point);
             }
 
-            const infoWindow = new maptalks.ui.InfoWindow({
+            this.infoWindow = new maptalks.ui.InfoWindow({
                 custom: true,
                 width: tooltip.width,
                 'dx': tooltip.dx,
                 'dy': - height + tooltip.dy,
-                // minHeight: tooltip.height,
-                autoOpenOn: 'click',
+                autoOpenOn: 'dragend',
                 autoCloseOn: 'click',
                 content,
-                autoPan: false
+                autoPan: false,
+                eventsPropagation: true,
             });
-            infoWindow.addTo(this.origin);
+            this.infoWindow.addTo(this.origin);
 
             if (tooltip.update) {
                 const func = tooltip.update(point);

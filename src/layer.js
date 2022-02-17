@@ -45,7 +45,8 @@ class Layer {
         const image = this.origin.append('img')
             .attr('src', params.url)
             .style('width', '100%')
-            .style('height', '100%');
+            .style('height', '100%')
+            .style('pointer-events', 'none');
 
         this.origin.append('div')
             .html(`${params.floor}层`)
