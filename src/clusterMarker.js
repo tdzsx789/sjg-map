@@ -12,13 +12,10 @@ class ClusterMarker {
                 update,
                 dx,
                 dy,
-                line: {
-                    color: lineColor,
-                    lineWidth,
-                    lineHeight,
-                    opacity: lineOpacity,
-                    pointSize
-                },
+                footer: {
+                    height: footHeight,
+                    content: footContent
+                }
             }
         } = opts;
 
@@ -38,35 +35,6 @@ class ClusterMarker {
         })
 
         const types = Object.keys(typeObj);
-
-        const categories = [
-            {
-                markerType: "ellipse",
-                markerFill: lineColor,
-                markerWidth: pointSize,
-                markerHeight: pointSize,
-                markerLineColor: lineColor,
-                markerLineWidth: 0,
-                markerDx: 0,
-                markerDy: 0,
-                markerOpacity: lineOpacity,
-                markerHorizontalAlignment: 'middle',
-                markerVerticalAlignment: 'top'
-            },
-            {
-                markerType: "rectangle",
-                markerFill: lineColor,
-                markerWidth: lineWidth,
-                markerHeight: lineHeight,
-                markerLineColor: '#000000',
-                markerLineWidth: 0,
-                markerDx: 0,
-                markerDy: 0,
-                markerOpacity: lineOpacity,
-                markerHorizontalAlignment: 'middle',
-                markerVerticalAlignment: 'top'
-            },
-        ]
 
         const points = types.map((ele) => {
             const split = ele.split('报警');
@@ -93,28 +61,39 @@ class ClusterMarker {
         });
 
         if (content) {
-            const dom = content(points);
+            const dom = content(points, this);
             this.content = new maptalks.ui.UIMarker(coordCenter, {
                 'draggable': false,
                 'single': false,
                 'content': dom,
                 dx,
-                'dy': -lineHeight + dy,
+                'dy': -footHeight + dy,
                 zIndex: 99
             });
             this.content.addTo(layer);
         }
 
         if (update) {
-            const func = update(points);
+            const func = update(points, this);
         }
 
-        this.origin = new maptalks.Marker(coordCenter, {
-            id: Math.random(),
-            draggable: false,
-            symbol: categories
-        });
-        this.origin.addTo(layer);
+        if (footContent) {
+            const dom = footContent(points, this);
+            this.origin = new maptalks.ui.UIMarker(coordCenter, {
+                id: Math.random(),
+                draggable: false,
+                'single': false,
+                'content': dom,
+                dx: 0,
+                dy: -footHeight / 2,
+            });
+            this.origin.addTo(layer);
+        }
+    }
+
+    remove() {
+        this.origin.remove();
+        this.content.remove();
     }
 }
 

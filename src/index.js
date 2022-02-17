@@ -18,6 +18,15 @@ class SJGMap {
         zoom: 16.2,
         maxZoom: 18.5,
         clusterZoom: 18.5,
+        zoomAnimation: false,
+        zoomAnimationDuration: 0,
+        panAnimation: false,
+        panAnimationDuration: 0,
+        viewHistory: false,
+        dragPan: true,
+        dragRotate: false,
+        dragPitch: false,
+        fog: false,
         // fpsOnInteracting: 60,
         attribution: {
             content: "",
@@ -31,38 +40,22 @@ class SJGMap {
         dynamicHideMarker: false,
         marker: {
             draggable: false,
-            style: {
-                width: 40,
-                height: 40,
-                opacity: 1,
-                cursor: 'pointer'
-            },
             tooltip: {
                 show: true,
                 width: 189,
                 height: 124,
-                content: undefined
+                content: undefined,
+                dx: 0,
+                dy: -10
             },
-            line: {
-                show: true,
-                color: "rgb(34,195,252)",
-                alarm: "rgb(252,68,70)",
-                lineWidth: 2,
-                lineHeight: 60,
-                opacity: 1,
-                pointSize: 8
-            },
-            text: {
-                show: true,
-                fontFamily: 'PingfangSC',
-                fontSize: 12,
-                offsetY: 8,
-                offsetX: 0,
-                color: "#34495e",
-                opacity: 1,
-                textHaloFill: "#fff",
-                textHaloRadius: 2,
-                decimals: 4
+            height: 100,
+            content: function (params) {
+                const color = params.stats === 'alarm' ? 'rgb(252,68,70)' : 'rgb(34,195,252)';
+                return `<div style="width: 30px;height: 100px;cursor:pointer;">
+                <div style="width: 30px;height: 30px;background: url(${params.url});background-size: 100% 100%;"></div>
+                <div style="width: 1px;height: 60px;margin:auto;background: ${color};"></div>
+                <div style="width: 6px;height: 6px;margin:auto;background: ${color};border-radius: 50%;"></div>
+                </div>`
             },
             images: []
         },
@@ -72,13 +65,15 @@ class SJGMap {
             update: undefined,
             dx: 0,
             dy: 0,
-            line: {
-                color: "rgb(34,195,252)",
-                lineWidth: 2,
-                lineHeight: 60,
-                opacity: 1,
-                pointSize: 8
-            },
+            footer: {
+                height: 70,
+                content: function () {
+                    return `<div style="width: 10px;height: 70px;">
+                    <div style="width: 2px;height: 60px;margin:auto;background: rgb(34,195,252);"></div>
+                    <div style="width: 10px;height: 10px;background: rgb(34,195,252);border-radius: 50%;"></div>
+                    </div>`
+                }
+            }
         },
         building: {
             mask: {
@@ -117,19 +112,41 @@ class SJGMap {
 
     showHideMarker(marker) {
         if (!this.option.dynamicHideMarker) return;
-        const containerExtent = marker.origin.getContainerExtent();
+        const pos = marker.origin.getPosition();
+        // const containerExtent = marker.origin.getContainerExtent();
         const isIn = d3.polygonContains([
             [1001, 244], [1812, 376], [935, 968], [96, 624]
-        ], [containerExtent.xmin, containerExtent.ymax]);
+        ], [pos.x, pos.y]);
         if (!isIn) {
+            if (marker.content) marker.content.hide();
             marker.origin.hide();
         } else {
+            if (marker.content) marker.content.show();
             marker.origin.show();
         }
     }
 
     add(point) {
-        const marker = new Marker(point, this.option, this.clusterLayer);
+        const marker = new Marker(point, this.option, this.clusterLayer,
+            (marker) => {
+                marker.origin.remove();
+                this.drawClusterPoint();
+            },
+            (event, func, marker) => {
+                if (event === "drag") {
+                    marker.origin.on('dragend', (d) => {
+                        const coord =  marker.origin.getCoordinates();
+                        marker.calcuMarker.setCoordinates(coord);
+                        d.coordinate =coord;
+                        func(d);
+                        this.drawClusterPoint();
+                    })
+                } else {
+                    marker.origin.on(event, (d) => {
+                        func(d);
+                    })
+                }
+            });
         marker.on('mousedown', () => {
             this.clickable = false;
         })
@@ -157,18 +174,35 @@ class SJGMap {
             this.clusterGroup = [];
         }
         this.clusterTimeout = setTimeout(() => {
+            const { content } = this.option.marker;
             const clusters = this.clusterLayer.getClusters();
+            const geoList = this.clusterLayer._geoList;
+            const markersId = [];
             clusters.forEach((ele) => {
-                const marker = new ClusterMarker(ele, this.option, this.buildingLayer, this.map);
+                ele.children.forEach((child) => {
+                    markersId.push(child._id);
+                })
+            });
+            geoList.forEach((marker) => {
+                const isCluster = markersId.find((ele) => ele === marker._id);
+                if (!isCluster) {
+                    const inner = content(marker.__option);
+                    marker.uimarker.setContent(inner);
+                } else {
+                    marker.uimarker.setContent('');
+                }
+            })
+            clusters.forEach((ele) => {
+                const marker = new ClusterMarker(ele, this.option, this.markerLayer, this.map);
                 this.clusterGroup.push(marker);
                 this.showHideMarker(marker);
             })
             this.markerGroup.forEach((marker) => {
                 this.showHideMarker(marker);
             })
-            // this.buildingGroup.forEach((marker) => {
-            //     this.showHideMarker(marker);
-            // })
+            this.buildingGroup.forEach((marker) => {
+                this.showHideMarker(marker);
+            })
         }, 300)
     }
 
@@ -188,19 +222,43 @@ class SJGMap {
         this.option.doubleClickZoom = false;
         this.option.zoomInCenter = true;
         this.option.hitDetect = false;
-        this.option.zoomAnimation = false;
+        // this.option.draggable = false;
 
         this.map = new maptalks.Map(dom, this.option);
         this.map.setCursor('move');
 
         this.map2 = new SyncMap(dom);
 
-        this.map.on("mouseup", () => {
+        this.map.on('mousedown', (evt) => {
+            this.map.setMinZoom(16.5);
+            this.startMove = evt.containerPoint;
+        })
+
+        this.map.on("mouseup", (evt) => {
+            this.clusterGroup.forEach((marker) => {
+                this.showHideMarker(marker);
+            })
+            this.markerGroup.forEach((marker) => {
+                this.showHideMarker(marker);
+            })
+            this.buildingGroup.forEach((marker) => {
+                this.showHideMarker(marker);
+            })
+
+            if (this.startMove) {
+                const diffX = evt.containerPoint.x - this.startMove.x;
+                const diffY = evt.containerPoint.y - this.startMove.y;
+                const map2center = this.map2.getCenter();
+                const map2centerCantainerPoint = this.map2.coordinateToContainerPoint(map2center);
+                const map2NewContainerPoint = { x: map2centerCantainerPoint.x - diffX, y: map2centerCantainerPoint.y - diffY };
+                const map2NewCenter = this.map2.containerPointToCoordinate(map2NewContainerPoint);
+                this.map2.setCenter(map2NewCenter);
+            }
+
             if (this.timeout) clearTimeout(this.timeout);
             this.timeout = setTimeout(() => {
                 this.clickable = true;
-            }, 10)
-            this.moving = null;
+            }, 10);
         })
 
         this.map.on('zoomstart', (evt) => {
@@ -215,32 +273,6 @@ class SJGMap {
             this.drawClusterPoint();
         })
 
-        this.map.on('movestart', (evt) => {
-            this.startMove = evt.containerPoint;
-        })
-
-        this.map.on('moveend', (evt) => {
-            this.clusterGroup.forEach((marker) => {
-                this.showHideMarker(marker);
-            })
-            this.markerGroup.forEach((marker) => {
-                this.showHideMarker(marker);
-            })
-            // this.buildingGroup.forEach((marker) => {
-            //     this.showHideMarker(marker);
-            // })
-
-            if (this.startMove) {
-                const diffX = evt.containerPoint.x - this.startMove.x;
-                const diffY = evt.containerPoint.y - this.startMove.y;
-                const map2center = this.map2.getCenter();
-                const map2centerCantainerPoint = this.map2.coordinateToContainerPoint(map2center);
-                const map2NewContainerPoint = { x: map2centerCantainerPoint.x - diffX, y: map2centerCantainerPoint.y - diffY };
-                const map2NewCenter = this.map2.containerPointToCoordinate(map2NewContainerPoint);
-                this.map2.setCenter(map2NewCenter);
-            }
-        })
-
         this.clusterLayer = new ClusterLayer('cluster', {
             zIndex: 1,
             'noClusterWithOneMarker': true,
@@ -248,17 +280,21 @@ class SJGMap {
             maxClusterRadius: this.option.cluster.clusterRadius,
             'symbol': [{
                 'markerType': 'ellipse',
-                'markerFill': { property: 'count', type: 'interval', stops: [[0, 'rgb(135, 196, 240)'], [10, '#1bbc9b'], [20, 'rgb(216, 115, 149)']] },
+                'markerFill': '#000000',
                 'markerFillOpacity': 0,
                 'markerLineOpacity': 1,
                 'markerLineWidth': 0,
                 'markerLineColor': '#000000',
-                'markerWidth': { property: 'count', type: 'interval', stops: [[0, 40], [10, 60], [20, 80]] },
-                'markerHeight': { property: 'count', type: 'interval', stops: [[0, 40], [10, 60], [20, 80]] }
+                'markerWidth': 0,
+                'markerHeight': 0
             }],
+            'textSymbol': {},
             'drawClusterText': false,
             'geometryEvents': true,
-            'single': false
+            'single': false,
+            forceRenderOnZooming: false,
+            animation: false,
+            'animationDuration': 0,
         }).addTo(this.map);
 
         const mapExtent = [121.31638, 29.1666, 121.2802, 29.1866];
@@ -292,15 +328,26 @@ class SJGMap {
         })
         this.map.addLayer(imageLayer);
 
-        const maxExtent = new maptalks.Extent([121.316, 29.1686, 121.284, 29.1846]);
+        // const mapExtent = [121.31638, 29.1666, 121.2802, 29.1866];
+        const maxExtent = new maptalks.Extent([121.31628, 29.1671, 121.2812, 29.1861]);
+        this.map.getLayer('v')
+        const vlayer = new maptalks.VectorLayer('v').addTo(this.map);
+        vlayer.addGeometry(
+            new maptalks.Polygon(maxExtent.toArray(), {
+                symbol: { 'polygonOpacity': 0, 'lineWidth': 5, 'lineColor': 'red' }
+            })
+        );
 
         this.preCenter = this.map.getCenter();
+        this.currentExtent = this.map.getExtent();
+
         this.map.on('moving', (e) => {
-            if (!this.map.getExtent().within(maxExtent)) {
+            const nowExtent = this.map.getExtent();
+            const isIn = nowExtent.within(maxExtent);
+            if (!isIn) {
                 this.map.setCenter(this.preCenter);
                 return;
             }
-            this.map.setMinZoom(16.5);
             this.preCenter = this.map.getCenter();
         });
 
@@ -319,39 +366,45 @@ class SJGMap {
             forceRenderOnRotating: false,
         });
 
-        const img2 = document.createElement('img');
-        img2.src = this.option.maskImage;
-        const img = document.createElement('img');
-        img.src = this.option.backgroundImage;
-        const minZoom = this.option.zoom;
-        const centerX = '' + this.option.center[0];
-        const centerY = '' + this.option.center[1];
-        img2.onload = () => {
-            img.onload = () => {
-                canvasLayer.draw = function (context) {
-                    const size = this.map.getSize();
-                    const { width, height } = size;
-                    context.drawImage(img, 0, 0, width, height);
-                    const currentZoom = this.map.getZoom();
-                    if (currentZoom === minZoom) {
-                        const currentCenter = this.map.getCenter();
-                        const currentX = currentCenter.x.toFixed(4);
-                        const currentY = currentCenter.y.toFixed(4);
-                        if (centerX === currentX && centerY === currentY) {
-                            context.drawImage(img2, 108, 44, 1767, 916);
+        if (this.option.maskImage || this.option.backgroundImage) {
+            const img2 = document.createElement('img');
+            img2.src = this.option.maskImage;
+            const img = document.createElement('img');
+            img.src = this.option.backgroundImage;
+            const minZoom = this.option.zoom;
+            const centerX = '' + this.option.center[0];
+            const centerY = '' + this.option.center[1];
+            img2.onload = () => {
+                img.onload = () => {
+                    canvasLayer.draw = function (context) {
+                        const size = this.map.getSize();
+                        const { width, height } = size;
+                        context.drawImage(img, 0, 0, width, height);
+                        const currentZoom = this.map.getZoom();
+                        if (currentZoom === minZoom) {
+                            const currentCenter = this.map.getCenter();
+                            const currentX = currentCenter.x.toFixed(4);
+                            const currentY = currentCenter.y.toFixed(4);
+                            if (centerX === currentX && centerY === currentY) {
+                                context.drawImage(img2, 108, 44, 1767, 916);
+                            }
                         }
-                    }
-                    this.completeRender();
-                };
+                        this.completeRender();
+                    };
 
-                canvasLayer.drawOnInteracting = function (context) {
-                    this.draw(context);
-                };
-                this.map.addLayer(canvasLayer);
+                    canvasLayer.drawOnInteracting = function (context) {
+                        this.draw(context);
+                    };
+                    this.map.addLayer(canvasLayer);
+                }
             }
         }
 
         this.buildingLayer = new maptalks.VectorLayer("buildings", {
+            zIndex: 1
+        }).addTo(this.map);
+
+        this.markerLayer = new maptalks.VectorLayer("markers", {
             zIndex: 1
         }).addTo(this.map);
     }

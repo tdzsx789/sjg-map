@@ -113,7 +113,6 @@ class Building {
 
     on(event, func) {
         const { nodeId, className } = this.__option.building.mask;
-        console.log('nodeId', nodeId, className)
         const container = d3.select(nodeId);
         if (!this.origin) return;
         if (event === 'close') {

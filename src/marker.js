@@ -1,24 +1,51 @@
 import * as maptalks from "maptalks";
-import { getMarkerStyle } from './func';
 import { isFunction } from "./utils";
 
-class Marker {
-    constructor(point, opts, layer) {
-        const symbol = getMarkerStyle(point, opts);
-        this.origin = new maptalks.Marker(point.coordinate, {
+class CalcuMarker {
+    constructor(point, opts, layer, removeMarker, onMarker) {
+        this.calcuMarker = new maptalks.Marker(point.coordinate, {
             id: point.id ? point.id + Math.random() : Math.random(),
-            draggable: opts.marker.draggable,
-            symbol,
+            editable: false,
+            interactive: false,
+            draggable: false,
             dragShadow: false,
-            cursor: opts.marker.style.cursor
+            symbol: {
+            }
         });
+        layer.addMarker(this.calcuMarker);
 
-        this.origin.__option = point;
-        this.__option = opts.marker;
+        const option = opts.marker;
+        const { images } = option;
+        let url = null;
+        if (images.length > 0) {
+            if (point.type) {
+                const currentEle = images.find((ele) => ele.type === point.type);
+                const alarmUrl = currentEle.alarm || currentEle.url;
+                url = point.stats === 'alarm' ? alarmUrl : currentEle.url;
+            } else {
+                url = images[0].url;
+            }
+        }
+        point.url = url;
+        this.calcuMarker.__option = point;
+        this.__option = option;
+        const { height } = option;
 
-        layer.addMarker(this.origin);
+        this.origin = new maptalks.ui.UIMarker(point.coordinate, {
+            id: point.id ? point.id + Math.random() : Math.random(),
+            'draggable': true,
+            'single': false,
+            'content': '',
+            dx: 0,
+            dy: - height / 2
+        });
+        this.origin.addTo(layer);
+        this.calcuMarker.uimarker = this.origin;
 
-        const { tooltip } = this.__option;
+        this.__removeMarker = removeMarker;
+        this.__on = onMarker;
+
+        const { tooltip } = option;
         if (tooltip.show) {
             let content = '';
 
@@ -26,16 +53,18 @@ class Marker {
                 content = tooltip.content(point);
             }
 
-            this.origin.setInfoWindow({
+            const infoWindow = new maptalks.ui.InfoWindow({
                 custom: true,
                 width: tooltip.width,
-                'dx': 0,
-                'dy': 0,
+                'dx': tooltip.dx,
+                'dy': - height + tooltip.dy,
                 // minHeight: tooltip.height,
                 autoOpenOn: 'click',
                 autoCloseOn: 'click',
-                content
+                content,
+                autoPan: false
             });
+            infoWindow.addTo(this.origin);
 
             if (tooltip.update) {
                 const func = tooltip.update(point);
@@ -44,47 +73,16 @@ class Marker {
     }
 
     on(event, func) {
-        if (event === "drag") {
-            this.origin.on('dragend', (d) => {
-                if (this.__option.text.show) {
-                    const x = d.gaodeCoordinate.x.toFixed(this.__option.text.decimals);
-                    const y = d.gaodeCoordinate.y.toFixed(this.__option.text.decimals);
-                    this.origin.updateSymbol([
-                        {},
-                        {
-                            textName: `${x}, ${y}`,
-                        },
-                    ]);
-                }
-                func(d);
-            })
-        } else {
-            this.origin.on(event, (d) => {
-                func(d);
-            })
-        }
-    }
-
-    setImage(url) {
-        this.origin.updateSymbol([
-            { markerFile: url },
-            {},
-        ]);
-    }
-
-    setOption(opts) {
-        for (let key in opts) {
-            this.origin[key] = opts[key];
-        }
-    }
-
-    get(type) {
-        return this.origin.__option[type];
+        this.__on(event, func, this);
     }
 
     remove() {
-        this.origin.remove();
+        this.__removeMarker(this);
+    }
+
+    get(type) {
+        return this.calcuMarker.__option[type];
     }
 }
 
-export default Marker;
+export default CalcuMarker;
