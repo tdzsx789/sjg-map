@@ -8,7 +8,6 @@ import ClusterMarker from './clusterMarker';
 import SyncMap from './syncMap';
 
 class SJGMap {
-    clickable = true;
     clusterGroup = [];
     markerGroup = [];
     buildingGroup = [];
@@ -102,7 +101,7 @@ class SJGMap {
                 this.clickContainerPoint = e.containerPoint;
                 const coordinate = this.map2.containerPointToCoordinate(this.clickContainerPoint);
                 e.gaodeCoordinate = coordinate;
-                if (this.clickable) {
+                if (!window.unclickable) {
                     func(e);
                 }
             });
@@ -140,18 +139,10 @@ class SJGMap {
                         d.coordinate = coord;
                         func(d);
                         this.drawClusterPoint();
-                        marker.infoWindow.on('showend', (e) => {
-                            const infoDom = marker.infoWindow.getDOM();
-                            infoDom.style.zIndex = 999;
-                            this.clickable = false;
-                        })
-                        marker.infoWindow.on('hide', () => {
-                            this.clickable = true;
-                        })
                     })
                 } else {
                     marker.origin.on(event, (d) => {
-                        this.clickable = false;
+                        window.unclickable = true;
                         func(d);
                     })
                 }
@@ -164,7 +155,7 @@ class SJGMap {
     addBuilding(data) {
         const build = new Building(data, this.option, this.buildingLayer);
         build.on('mousedown', () => {
-            this.clickable = false;
+            window.unclickable = true;
         })
         this.buildingGroup.push(build);
         return build;

@@ -65,6 +65,14 @@ class CalcuMarker {
                 eventsPropagation: true,
             });
             this.infoWindow.addTo(this.origin);
+            this.infoWindow.on('showend', (e) => {
+                const infoDom = this.infoWindow.getDOM();
+                infoDom.style['z-index'] = 9999;
+                window.unclickable = true;
+            })
+            this.infoWindow.on('hide', () => {
+                window.unclickable = false;
+            })
 
             if (tooltip.update) {
                 const func = tooltip.update(point);
