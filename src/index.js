@@ -227,7 +227,7 @@ class SJGMap {
         this.map2 = new SyncMap(dom);
 
         this.map.on('mousedown', (evt) => {
-            this.map.setMinZoom(16.5);
+            this.map.setMinZoom(this.option.zoom);
             this.startMove = evt.containerPoint;
         })
 
