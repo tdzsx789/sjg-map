@@ -25,7 +25,7 @@ class ClusterMarker {
 
         const typeObj = {};
         children.forEach((ele) => {
-            const stats = ele.__option.stats === 'alarm' ? '报警' : '';
+            const stats = ele.__option.stats === 'alarm' ? '___报_警___' : '';
             const type = stats + ele.__option.type;
             if (!typeObj[type]) {
                 typeObj[type] = [ele.__option];
@@ -37,7 +37,7 @@ class ClusterMarker {
         const types = Object.keys(typeObj);
 
         const points = types.map((ele) => {
-            const split = ele.split('报警');
+            const split = ele.split('___报_警___');
             const name = split.length > 1 ? split[1] : ele;
             const stats = split.length > 1 ? 'alarm' : 'normal';
             let url = null;

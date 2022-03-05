@@ -56,7 +56,7 @@ class Building {
         })
         const typeObj = {};
         totalPoints.forEach((ele) => {
-            const stats = ele.stats === 'alarm' ? '报警' : '';
+            const stats = ele.stats === 'alarm' ? '___报_警___' : '';
             const type = stats + ele.type;
             if (!typeObj[type]) {
                 typeObj[type] = [ele];
@@ -68,7 +68,7 @@ class Building {
         const types = Object.keys(typeObj);
 
         const points = types.map((ele) => {
-            const split = ele.split('报警');
+            const split = ele.split('___报_警___');
             const name = split.length > 1 ? split[1] : ele;
             const stats = split.length > 1 ? 'alarm' : 'normal';
             let url = null;
