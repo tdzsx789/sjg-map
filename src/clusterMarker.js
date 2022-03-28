@@ -1,5 +1,5 @@
 import * as maptalks from "maptalks";
-import { createHash } from './utils';
+import { createHash, isFunction } from './utils';
 
 class ClusterMarker {
     constructor(point, opts, layer, map) {
@@ -60,7 +60,7 @@ class ClusterMarker {
             }
         });
 
-        if (content) {
+        if (content && isFunction(content)) {
             const dom = content(points, this);
             this.content = new maptalks.ui.UIMarker(coordCenter, {
                 'draggable': false,
@@ -73,7 +73,7 @@ class ClusterMarker {
             this.content.addTo(layer);
         }
 
-        if (update) {
+        if (update && isFunction(update)) {
             const func = update(points, this);
         }
 

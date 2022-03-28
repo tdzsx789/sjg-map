@@ -38,6 +38,7 @@ class SJGMap {
         dynamicHideMarker: false,
         marker: {
             draggable: false,
+            height: undefined,
             tooltip: {
                 show: true,
                 width: 189,
@@ -46,7 +47,6 @@ class SJGMap {
                 dx: 0,
                 dy: -10
             },
-            height: 100,
             content: function (params) {
                 const color = params.stats === 'alarm' ? 'rgb(252,68,70)' : 'rgb(34,195,252)';
                 return `<div style="width: 30px;height: 100px;cursor:pointer;">
@@ -55,6 +55,7 @@ class SJGMap {
                 <div style="width: 6px;height: 6px;margin:auto;background: ${color};border-radius: 50%;"></div>
                 </div>`
             },
+            update: undefined,
             images: []
         },
         cluster: {
@@ -125,7 +126,7 @@ class SJGMap {
     }
 
     add(point) {
-        const marker = new Marker(point, this.option, this.clusterLayer,
+        const marker = new Marker(point,this.map, this.option, this.clusterLayer,
             (marker) => {
                 marker.calcuMarker.remove();
                 marker.origin.remove();
@@ -171,7 +172,7 @@ class SJGMap {
             this.clusterGroup = [];
         }
         this.clusterTimeout = setTimeout(() => {
-            const { content } = this.option.marker;
+            const { content, dx, dy } = this.option.marker;
             const clusters = this.clusterLayer.getClusters();
             const geoList = this.clusterLayer._geoList;
             const markersId = [];
@@ -201,6 +202,11 @@ class SJGMap {
                 this.showHideMarker(marker);
             })
         }, 300)
+    }
+
+    removeAll() {
+        this.clusterLayer.clear();
+        this.markerLayer.clear();
     }
 
     constructor(dom, opts = {}) {
@@ -320,16 +326,7 @@ class SJGMap {
         })
         this.map.addLayer(imageLayer);
 
-        // const mapExtent = [121.31638, 29.1666, 121.2802, 29.1866];
         const maxExtent = new maptalks.Extent([121.31628, 29.1671, 121.2812, 29.1861]);
-
-        // this.map.getLayer('v')
-        // const vlayer = new maptalks.VectorLayer('v').addTo(this.map);
-        // vlayer.addGeometry(
-        //     new maptalks.Polygon(maxExtent.toArray(), {
-        //         symbol: { 'polygonOpacity': 0, 'lineWidth': 5, 'lineColor': 'red' }
-        //     })
-        // );
 
         this.preCenter = this.map.getCenter();
         this.currentExtent = this.map.getExtent();

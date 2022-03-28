@@ -1,7 +1,7 @@
 import * as maptalks from "maptalks";
 import * as d3 from 'd3';
 import Layer from './layer';
-import { createHash } from './utils';
+import { createHash, isFunction } from './utils';
 
 class Building {
     constructor(params, option, layer) {
@@ -21,7 +21,7 @@ class Building {
         const points = this.getPoints(layers, images);
         params.points = points;
 
-        if (content) {
+        if (content && isFunction(content)) {
             const dom = content(params);
             this.origin = new maptalks.ui.UIMarker(coordinate, {
                 id: name ? name + Math.random() : Math.random(),
@@ -35,7 +35,7 @@ class Building {
             this.origin.addTo(layer);
         }
 
-        if (update) {
+        if (update && isFunction(update)) {
             const func = update(points);
         }
 

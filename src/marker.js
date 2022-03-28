@@ -2,7 +2,7 @@ import * as maptalks from "maptalks";
 import { isFunction } from "./utils";
 
 class CalcuMarker {
-    constructor(point, opts, layer, removeMarker, onMarker) {
+    constructor(point, map, opts, layer, removeMarker, onMarker) {
         this.calcuMarker = new maptalks.Marker(point.coordinate, {
             id: point.id ? point.id + Math.random() : Math.random(),
             editable: false,
@@ -30,14 +30,16 @@ class CalcuMarker {
         this.calcuMarker.__option = point;
         this.__option = option;
         const { height } = option;
+        const __height = isFunction(height) ? height(point) : height;
 
         this.origin = new maptalks.ui.UIMarker(point.coordinate, {
             id: point.id ? point.id + Math.random() : Math.random(),
-            'draggable': true,
+            'draggable': option.draggable,
             'single': false,
             'content': '',
             dx: 0,
-            dy: - height / 2,
+            dy: - __height / 2,
+            markerVerticalAlignment: 'top'
         });
         this.origin.addTo(layer);
         this.calcuMarker.uimarker = this.origin;
@@ -47,25 +49,28 @@ class CalcuMarker {
 
         const { tooltip } = option;
         if (tooltip.show) {
-            let content = '';
-
-            if (tooltip.content && isFunction(tooltip.content)) {
-                content = tooltip.content(point);
-            }
-
             this.infoWindow = new maptalks.ui.InfoWindow({
                 custom: true,
                 width: tooltip.width,
                 'dx': tooltip.dx,
-                'dy': - height + tooltip.dy,
-                autoOpenOn: 'dragend',
-                autoCloseOn: 'click',
-                content,
+                'dy': - __height + tooltip.dy,
+                autoOpenOn: 'click',
+                autoCloseOn: false,
                 autoPan: false,
                 eventsPropagation: true,
+                eventsToStop: 'click mousedown'
             });
+            let content = '';
+            if (tooltip.content && isFunction(tooltip.content)) {
+                content = tooltip.content(point, this.infoWindow);
+            }
+            this.infoWindow.setContent(content);
             this.infoWindow.addTo(this.origin);
             this.infoWindow.on('showend', (e) => {
+                if (tooltip.update && isFunction(tooltip.update)) {
+                    const func = tooltip.update(point, this.infoWindow);
+                }
+
                 const infoDom = this.infoWindow.getDOM();
                 infoDom.style['z-index'] = 9999;
                 window.unclickable = true;
@@ -73,10 +78,9 @@ class CalcuMarker {
             this.infoWindow.on('hide', () => {
                 window.unclickable = false;
             })
-
-            if (tooltip.update) {
-                const func = tooltip.update(point);
-            }
+            map.on('mousedown', (evt) => {
+                this.infoWindow.hide();
+            })
         }
     }
 
