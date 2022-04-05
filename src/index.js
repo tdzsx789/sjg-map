@@ -126,7 +126,7 @@ class SJGMap {
     }
 
     add(point) {
-        const marker = new Marker(point,this.map, this.option, this.clusterLayer,
+        const marker = new Marker(point, this.map, this.option, this.clusterLayer,
             (marker) => {
                 marker.calcuMarker.remove();
                 marker.origin.remove();
@@ -205,8 +205,24 @@ class SJGMap {
     }
 
     removeAll() {
-        this.clusterLayer.clear();
-        this.markerLayer.clear();
+        for (let i = this.markerGroup.length - 1; i >= 0; i--) {
+            const marker = this.markerGroup[i];
+            marker.calcuMarker.remove();
+            marker.origin.remove();
+        }
+
+        for (let i = this.clusterGroup.length - 1; i >= 0; i--) {
+            const cluster = this.clusterGroup[i];
+            cluster.content.remove();
+            cluster.origin.remove();
+        }
+        this.markerGroup = [];
+        this.clusterGroup = [];
+    }
+
+    destroy() {
+        this.map.remove();
+        this.map2.remove();
     }
 
     constructor(dom, opts = {}) {
@@ -350,13 +366,13 @@ class SJGMap {
             this.preZoom = this.map.getZoom();
         })
 
-        const canvasLayer = new maptalks.CanvasLayer('c', {
-            forceRenderOnMoving: true,
-            forceRenderOnZooming: true,
-            forceRenderOnRotating: false,
-        });
-
         if (this.option.maskImage || this.option.backgroundImage) {
+            const canvasLayer = new maptalks.CanvasLayer('c', {
+                forceRenderOnMoving: true,
+                forceRenderOnZooming: true,
+                forceRenderOnRotating: false,
+            });
+
             const img2 = document.createElement('img');
             img2.src = this.option.maskImage;
             const img = document.createElement('img');
