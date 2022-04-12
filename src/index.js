@@ -1,6 +1,7 @@
 import * as maptalks from "maptalks";
 import * as d3 from 'd3';
 import { ClusterLayer } from 'maptalks.markercluster';
+import { HeatLayer } from 'maptalks.heatmap';
 import { merge } from './utils';
 import Marker from './marker';
 import Building from './building';
@@ -96,6 +97,23 @@ class SJGMap {
         }
     }
 
+    defaultHeatmapOption = {
+        'data': [],
+        'radius': 80,
+        'blur': 30,
+        'gradient': {
+            0.4: 'blue',
+            0.6: 'cyan',
+            0.7: 'lime',
+            0.8: 'yellow',
+            1.0: 'red'
+        },
+        'max': 1,
+        'radius': 25,
+        'blur': 15,
+        'minOpacity': 0.05
+    }
+
     on(event, func) {
         if (event === "click") {
             this.map.on("click", (e) => {
@@ -134,12 +152,24 @@ class SJGMap {
             },
             (event, func, marker) => {
                 if (event === "drag") {
+                    marker.origin.on('dragstart', (d) => {
+                        this._pointPosition = d.viewPoint;
+                    })
                     marker.origin.on('dragend', (d) => {
-                        const coord = marker.origin.getCoordinates();
-                        marker.calcuMarker.setCoordinates(coord);
-                        d.coordinate = coord;
-                        func(d);
-                        this.drawClusterPoint();
+                        if (JSON.stringify(this._pointPosition) !== JSON.stringify(d.viewPoint)) {
+                            const coord = marker.origin.getCoordinates();
+                            marker.calcuMarker.setCoordinates(coord);
+                            d.coordinate = coord;
+                            func(d);
+                            this.drawClusterPoint();
+                        }
+                    })
+                } else if (event === 'click') {
+                    marker.origin.on('click', (d) => {
+                        if (JSON.stringify(this._pointPosition) === JSON.stringify(d.viewPoint)) {
+                            window.unclickable = true;
+                            func(d);
+                        }
                     })
                 } else {
                     marker.origin.on(event, (d) => {
@@ -223,6 +253,14 @@ class SJGMap {
     destroy() {
         this.map.remove();
         this.map2.remove();
+    }
+
+    heatmap(heatmapOption) {
+        const heatmapConfig = merge(heatmapOption, this.defaultHeatmapOption);
+        const heatmapData = heatmapConfig.data.map((ele) => [ele.x, ele.y, ele.value]);
+        console.log(heatmapConfig)
+        this.heatmapLayer.setData(heatmapData);
+        this.heatmapLayer.config(heatmapConfig)
     }
 
     constructor(dom, opts = {}) {
@@ -413,6 +451,8 @@ class SJGMap {
         this.markerLayer = new maptalks.VectorLayer("markers", {
             zIndex: 1
         }).addTo(this.map);
+
+        this.heatmapLayer = new HeatLayer('heatmap').addTo(this.map);
     }
 }
 

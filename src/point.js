@@ -118,6 +118,14 @@ class Point {
                 d3.selectAll('.pointer').style('pointer-events', 'auto');
                 func(this.__params);
             });
+            this.__pointNode.on('mouseout', (evt) => {
+                evt.stopPropagation();
+                this.position = null;
+                if (!this.mousedownPosition) return;
+                const { x, y } = this.mousedownPosition;
+                if (x === evt.pageX && y === evt.pageY) return;
+                d3.selectAll('.pointer').style('pointer-events', 'auto');
+            })
         } else {
             this.__pointNode.on(event, (evt) => {
                 evt.stopPropagation();

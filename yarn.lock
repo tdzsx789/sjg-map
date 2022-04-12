@@ -2822,6 +2822,13 @@ make-dir@^3.0.2, make-dir@^3.1.0:
   dependencies:
     semver "^6.0.0"
 
+maptalks.heatmap@^0.6.1:
+  version "0.6.1"
+  resolved "https://registry.yarnpkg.com/maptalks.heatmap/-/maptalks.heatmap-0.6.1.tgz#9db1c004bc2305d285802f3a8343cdde210eea47"
+  integrity sha512-dlpms+5OcwQVzsjuNWT9XvfpLyVC/Lfai1EMgiFlIN3bmqsK8XTj+PQAnXcjSibe4Oze2EpalK06Tw59rMneNA==
+  dependencies:
+    simpleheat "^0.4.0"
+
 maptalks.markercluster@^0.8.3:
   version "0.8.3"
   resolved "https://registry.npmmirror.com/maptalks.markercluster/download/maptalks.markercluster-0.8.3.tgz#0fcdfa2741caed2fcf01f88806548a7d338e8105"
@@ -3591,6 +3598,11 @@ signal-exit@^3.0.3:
   version "3.0.6"
   resolved "https://registry.npmmirror.com/signal-exit/download/signal-exit-3.0.6.tgz#24e630c4b0f03fea446a2bd299e62b4a6ca8d0af"
   integrity sha512-sDl4qMFpijcGw22U5w63KmD3cZJfBuFlVNbVMKje2keoKML7X2UzWbc4XrmEbDwg0NXJc3yv4/ox7b+JWb57kQ==
+
+simpleheat@^0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/simpleheat/-/simpleheat-0.4.0.tgz#e2de8d4548fcf1a6960b636bfa939d05bcd49a7b"
+  integrity sha1-4t6NRUj88aaWC2Nr+pOdBbzUmns=
 
 simplify-js@^1.2.1:
   version "1.2.4"

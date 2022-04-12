@@ -4,7 +4,7 @@ import Point from './point';
 class Layer {
     constructor(params, data, buildingLayer, option) {
         const { layers } = data;
-        const w = 30;
+        const w = 33;
         const h = 50;
 
         const fl = params.floor - 1 || 0;
@@ -25,12 +25,8 @@ class Layer {
             .style('left', `${left}%`)
             .style('top', `${top}%`)
             .style('width', `${w}%`)
-            .style('transform', 'translate(0, 25%)')
-            // .style('height', `${h}%`)
-            // .style('background-image', `url(${params.url})`)
-            // .style('background-size', '100% auto')
-            // .style('background-position', 'center')
-            // .style('background-repeat', 'no-repeat')
+            .style('height', `${h}%`)
+            // .style('transform', 'translate(0, 25%)')
             .on('mousedown', (evt) => {
                 evt.stopPropagation();
                 if (window.tooltip) {
@@ -42,11 +38,21 @@ class Layer {
                 }
             })
 
-        const image = this.origin.append('img')
-            .attr('src', params.url)
-            .style('width', '100%')
-            .style('height', '100%')
-            .style('pointer-events', 'none');
+        // const image = this.origin.append('img')
+        //     .attr('src', params.url)
+        //     .style('width', '100%')
+        //     .style('height', '100%')
+        //     .style('pointer-events', 'none');
+
+
+        const image = this.origin.append('div')
+        .style('background-image', `url(${params.url})`)
+        .style('background-size', '95% auto')
+        .style('background-repeat', 'no-repeat')
+        .style('background-position', 'center')
+        .style('width', '100%')
+        .style('height', '100%')
+        .style('pointer-events', 'none');
 
         this.origin.append('div')
             .html(`${params.floor}层`)

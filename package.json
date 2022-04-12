@@ -1,6 +1,6 @@
 {
   "name": "sjgmap",
-  "version": "0.1.22",
+  "version": "0.1.23",
   "description": "",
   "main": "dist/index.js",
   "moduleName": "sjgmap",
@@ -23,6 +23,7 @@
     "d3": "^7.2.1",
     "file-loader": "^6.2.0",
     "maptalks": "^1.0.0-beta.6",
+    "maptalks.heatmap": "^0.6.1",
     "maptalks.markercluster": "^0.8.3",
     "number-precision": "^1.5.0",
     "url-loader": "^4.1.1"
