@@ -7,6 +7,7 @@ import Marker from './marker';
 import Building from './building';
 import ClusterMarker from './clusterMarker';
 import SyncMap from './syncMap';
+import Heatmap from './heatmap';
 
 class SJGMap {
     clusterGroup = [];
@@ -258,9 +259,8 @@ class SJGMap {
     heatmap(heatmapOption) {
         const heatmapConfig = merge(heatmapOption, this.defaultHeatmapOption);
         const heatmapData = heatmapConfig.data.map((ele) => [ele.x, ele.y, ele.value]);
-        console.log(heatmapConfig)
-        this.heatmapLayer.setData(heatmapData);
-        this.heatmapLayer.config(heatmapConfig)
+        const heatmap = new Heatmap(this.heatmapLayer, heatmapData, heatmapConfig);
+        return heatmap;
     }
 
     constructor(dom, opts = {}) {

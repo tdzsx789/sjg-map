@@ -1,14 +1,18 @@
 import * as maptalks from "maptalks";
 
 class Heatmap {
-    constructor(option, layer) {
-        const {
-            heatmap: {
+    constructor(layer, data, config) {
+        layer.setData(data);
+        layer.config(config);
+        this.__layer = layer;
+    }
 
-            }
-        } = option;
+    setData(data) {
+        this.__layer.setData(data);
+    }
 
-        console.log('tttt')
+    setConfig(config) {
+        this.__layer.config(config);
     }
 }
 
