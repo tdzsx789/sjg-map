@@ -1,13 +1,15 @@
 import * as maptalks from "maptalks";
 import * as d3 from 'd3';
+import WZoom from 'vanilla-js-wheel-zoom';
 import { ClusterLayer } from 'maptalks.markercluster';
 import { HeatLayer } from 'maptalks.heatmap';
 import { merge } from './utils';
 import Marker from './marker';
 import Building from './building';
 import ClusterMarker from './clusterMarker';
-import SyncMap from './syncMap';
+// import SyncMap from './syncMap';
 import Heatmap from './heatmap';
+import DrawTiles from './tiles';
 
 class SJGMap {
     clusterGroup = [];
@@ -16,9 +18,11 @@ class SJGMap {
 
     defaultOption = {
         center: [121.2986, 29.1766],
-        zoom: 16.2,
+        zoom: 16.9,
         maxZoom: 18.5,
         clusterZoom: 18.5,
+        draggable: false,
+        zoomable: false,
         zoomAnimation: false,
         zoomAnimationDuration: 0,
         panAnimation: false,
@@ -32,8 +36,8 @@ class SJGMap {
             content: "",
         },
         data: [],
-        pitch: 0,
-        bearing: 180,
+        pitch: 75,
+        bearing: 149.5,
         tiles: '',
         backgroundImage: '',
         maskImage: '',
@@ -118,9 +122,9 @@ class SJGMap {
     on(event, func) {
         if (event === "click") {
             this.map.on("click", (e) => {
-                this.clickContainerPoint = e.containerPoint;
-                const coordinate = this.map2.containerPointToCoordinate(this.clickContainerPoint);
-                e.gaodeCoordinate = coordinate;
+                // this.clickContainerPoint = e.containerPoint;
+                // const coordinate = this.map2.containerPointToCoordinate(this.clickContainerPoint);
+                e.gaodeCoordinate = e.coordinate;
                 if (!window.unclickable) {
                     func(e);
                 }
@@ -253,7 +257,7 @@ class SJGMap {
 
     destroy() {
         this.map.remove();
-        this.map2.remove();
+        // this.map2.remove();
     }
 
     heatmap(heatmapOption) {
@@ -265,65 +269,101 @@ class SJGMap {
 
     constructor(dom, opts = {}) {
         this.option = merge(opts, this.defaultOption);
-        this.option.minZoom = this.option.zoom;
+        // this.option.minZoom = this.option.zoom;
         this.option.baseLayer = new maptalks.TileLayer("base", {
             urlTemplate: '',
             // "https://wprd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=2&style=8&ltype=10",
             // urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
             // urlTemplate:
             //   "http://wprd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&style=7&x={x}&y={y}&z={z}",
+            // urlTemplate: 'https://wprd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=2&style=8<ype=11',
             // subdomains: ['a', 'b', 'c', 'd'],
             attribution: "",
-            opacity: 1,
+            opacity: 0,
         });
+        this.option.scrollWheelZoom = false;
         this.option.doubleClickZoom = false;
-        this.option.zoomInCenter = true;
+        this.option.zoomInCenter = false;
         this.option.hitDetect = false;
-        // this.option.draggable = false;
+        this.option.zoom = 16.93;
+        this.option.center = [121.29835499926844, 29.1765619894460];
 
-        this.map = new maptalks.Map(dom, this.option);
+        const content = d3.select(dom)
+            .append('div')
+            .style('width', '100%')
+            .style('height', '100%')
+            .style('display', 'flex')
+            .style('align-items', 'center')
+            .style('justify-content', 'center');
+
+        const container = content
+            .append('div')
+            .style('position', 'relative')
+            .style('display', 'flex')
+            .style('align-items', 'center')
+            .style('box-sizing', 'border-box');
+
+        const w = 1920;
+        const h = 1080;
+
+        const box = container.node();
+        WZoom.create(box, {
+            type: 'html',
+            width: w,
+            height: h,
+            dragScrollable: true,
+            minScale: 1,
+            maxScale: 2,
+            speed: 20,
+            zoomOnClick: false,
+            watchImageChange: false,
+            smoothExtinction: 0,
+            dragScrollableOptions: {
+                smoothExtinction: 0,
+            }
+        });
+
+        const canvas = container.append('canvas')
+            .style('width', `${w}px`)
+            .style('height', `${h}px`)
+            .attr('width', w * 2)
+            .attr('height', h * 2)
+            .style('pointer-events', 'none')
+
+        new DrawTiles(canvas.node(), this.option.tiles, { width: w * 2, height: h * 2 });
+
+        const mapContainer = container.append('div')
+            .style('position', 'absolute')
+            .style('width', `${w}px`)
+            .style('height', `${h}px`);
+
+        this.map = new maptalks.Map(mapContainer.node(), this.option);
         this.map.setCursor('move');
 
-        this.map2 = new SyncMap(dom);
+        // this.map.on('mousedown', (evt) => {
+        //     // this.map.setMinZoom(this.option.zoom);
+        //     this.startMove = evt.containerPoint;
+        // })
 
-        this.map.on('mousedown', (evt) => {
-            this.map.setMinZoom(this.option.zoom);
-            this.startMove = evt.containerPoint;
-        })
+        // this.map.on("mouseup", (evt) => {
+        //     this.clusterGroup.forEach((marker) => {
+        //         this.showHideMarker(marker);
+        //     })
+        //     this.markerGroup.forEach((marker) => {
+        //         this.showHideMarker(marker);
+        //     })
+        //     this.buildingGroup.forEach((marker) => {
+        //         this.showHideMarker(marker);
+        //     })
+        // })
 
-        this.map.on("mouseup", (evt) => {
-            this.clusterGroup.forEach((marker) => {
-                this.showHideMarker(marker);
-            })
-            this.markerGroup.forEach((marker) => {
-                this.showHideMarker(marker);
-            })
-            this.buildingGroup.forEach((marker) => {
-                this.showHideMarker(marker);
-            })
+        // this.map.on('zoomstart', (evt) => {
+        //     this.startZoom = evt.from;
+        // })
 
-            if (this.startMove) {
-                const diffX = evt.containerPoint.x - this.startMove.x;
-                const diffY = evt.containerPoint.y - this.startMove.y;
-                const map2center = this.map2.getCenter();
-                const map2centerCantainerPoint = this.map2.coordinateToContainerPoint(map2center);
-                const map2NewContainerPoint = { x: map2centerCantainerPoint.x - diffX, y: map2centerCantainerPoint.y - diffY };
-                const map2NewCenter = this.map2.containerPointToCoordinate(map2NewContainerPoint);
-                this.map2.setCenter(map2NewCenter);
-            }
-        })
-
-        this.map.on('zoomstart', (evt) => {
-            this.startZoom = evt.from;
-        })
-
-        this.map.on('zoomend', (evt) => {
-            const zoomIncrease = evt.to / this.startZoom;
-            const map2Zoom = this.map2.getZoom();
-            const zoom2 = map2Zoom * zoomIncrease;
-            this.map2.setZoom(zoom2);
-            this.drawClusterPoint();
-        })
+        // this.map.on('zoomend', (evt) => {
+        //     this.drawClusterPoint();
+        // })
 
         this.clusterLayer = new ClusterLayer('cluster', {
             zIndex: 1,
@@ -349,60 +389,61 @@ class SJGMap {
             'animationDuration': 0,
         }).addTo(this.map);
 
-        const mapExtent = [121.31638, 29.1666, 121.2802, 29.1866];
-        const stepX = (mapExtent[2] - mapExtent[0]) / 2;
-        const stepY = (mapExtent[3] - mapExtent[1]) / 2;
+        // const mapExtent = [121.31638, 29.1666, 121.2802, 29.1866];
+        // const stepX = (mapExtent[2] - mapExtent[0]) / 2;
+        // const stepY = (mapExtent[3] - mapExtent[1]) / 2;
 
-        const { tiles } = this.option;
-        for (let i = 0; i < tiles.length; i++) {
-        }
-        const imageGroup = tiles.map((url, i) => {
-            const volumn = i % 2;
-            const row = Math.floor(i / 2);
-            const currentExtent = [
-                mapExtent[0] + stepX * volumn,
-                mapExtent[1] + stepY * row,
-                mapExtent[0] + stepX * (volumn + 1),
-                mapExtent[1] + stepY * (row + 1),
-            ]
-            return {
-                url,
-                extent: currentExtent,
-                opacity: 1,
-            }
-        })
+        // const { tiles } = this.option;
+        // for (let i = 0; i < tiles.length; i++) {
+        // }
+        // const imageGroup = tiles.map((url, i) => {
+        //     const volumn = i % 2;
+        //     const row = Math.floor(i / 2);
+        //     const currentExtent = [
+        //         mapExtent[0] + stepX * volumn,
+        //         mapExtent[1] + stepY * row,
+        //         mapExtent[0] + stepX * (volumn + 1),
+        //         mapExtent[1] + stepY * (row + 1),
+        //     ]
+        //     return {
+        //         url,
+        //         extent: currentExtent,
+        //         // opacity: 1,
+        //         // opacity: 0.3,
+        //     }
+        // })
 
-        const imageLayer = new maptalks.ImageLayer("images", imageGroup, {
-            forceRenderOnMoving: true,
-            forceRenderOnZooming: true,
-            forceRenderOnRotating: false,
-            zIndex: 0
-        })
-        this.map.addLayer(imageLayer);
+        // const imageLayer = new maptalks.ImageLayer("images", imageGroup, {
+        //     forceRenderOnMoving: true,
+        //     forceRenderOnZooming: true,
+        //     forceRenderOnRotating: false,
+        //     zIndex: 0,
+        // })
+        // this.map.addLayer(imageLayer);
 
-        const maxExtent = new maptalks.Extent([121.31628, 29.1671, 121.2812, 29.1861]);
+        // const maxExtent = new maptalks.Extent([121.31628, 29.1671, 121.2812, 29.1861]);
 
-        this.preCenter = this.map.getCenter();
-        this.currentExtent = this.map.getExtent();
+        // this.preCenter = this.map.getCenter();
+        // this.currentExtent = this.map.getExtent();
 
-        this.map.on('moving', (e) => {
-            const nowExtent = this.map.getExtent();
-            const isIn = nowExtent.within(maxExtent);
-            if (!isIn) {
-                this.map.setCenter(this.preCenter);
-                return;
-            }
-            this.preCenter = this.map.getCenter();
-        });
+        // this.map.on('moving', (e) => {
+        //     const nowExtent = this.map.getExtent();
+        //     const isIn = nowExtent.within(maxExtent);
+        //     if (!isIn) {
+        //         this.map.setCenter(this.preCenter);
+        //         return;
+        //     }
+        //     this.preCenter = this.map.getCenter();
+        // });
 
-        this.preZoom = this.map.getZoom();
-        this.map.on('zooming', (e) => {
-            if (!this.map.getExtent().within(maxExtent)) {
-                this.map.setMinZoom(this.preZoom);
-                return;
-            }
-            this.preZoom = this.map.getZoom();
-        })
+        // this.preZoom = this.map.getZoom();
+        // this.map.on('zooming', (e) => {
+        //     if (!this.map.getExtent().within(maxExtent)) {
+        //         this.map.setMinZoom(this.preZoom);
+        //         return;
+        //     }
+        //     this.preZoom = this.map.getZoom();
+        // })
 
         if (this.option.maskImage || this.option.backgroundImage) {
             const canvasLayer = new maptalks.CanvasLayer('c', {

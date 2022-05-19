@@ -3836,6 +3836,11 @@ uuid@^8.3.2:
   resolved "https://registry.npmmirror.com/uuid/download/uuid-8.3.2.tgz#80d5b5ced271bb9af6c445f21a1a04c606cefbe2"
   integrity sha1-gNW1ztJxu5r2xEXyGhoExgbO++I=
 
+vanilla-js-wheel-zoom@^6.12.0:
+  version "6.12.0"
+  resolved "https://registry.npmmirror.com/vanilla-js-wheel-zoom/-/vanilla-js-wheel-zoom-6.12.0.tgz#a2b48b46a9f062b3caddf9aa3a05e3e870a3ddf4"
+  integrity sha512-EfKwaMQr2mdtAoMVtBSEnKXosFkbxfg23OEIhDF3ofmW48+AVOc2I7mUjJva5ywpNNQB4QZWedN6DoEMvI/S7g==
+
 vary@~1.1.2:
   version "1.1.2"
   resolved "https://registry.nlark.com/vary/download/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"

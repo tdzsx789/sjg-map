@@ -1,6 +1,6 @@
 {
   "name": "sjgmap",
-  "version": "0.1.24",
+  "version": "0.1.0-beta",
   "description": "",
   "main": "dist/index.js",
   "moduleName": "sjgmap",
@@ -26,7 +26,8 @@
     "maptalks.heatmap": "^0.6.1",
     "maptalks.markercluster": "^0.8.3",
     "number-precision": "^1.5.0",
-    "url-loader": "^4.1.1"
+    "url-loader": "^4.1.1",
+    "vanilla-js-wheel-zoom": "^6.12.0"
   },
   "devDependencies": {
     "@babel/core": "^7.14.3",
