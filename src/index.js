@@ -8,6 +8,7 @@ import Marker from './marker';
 import Building from './building';
 import ClusterMarker from './clusterMarker';
 // import SyncMap from './syncMap';
+import OldMap from './oldMap';
 import Heatmap from './heatmap';
 import DrawTiles from './tiles';
 
@@ -17,8 +18,8 @@ class SJGMap {
     buildingGroup = [];
 
     defaultOption = {
-        center: [121.2986, 29.1766],
-        zoom: 16.9,
+        center: [121.29835499926844, 29.1765619894460],
+        zoom: 16.93,
         maxZoom: 18.5,
         clusterZoom: 18.5,
         draggable: false,
@@ -41,6 +42,7 @@ class SJGMap {
         tiles: '',
         backgroundImage: '',
         maskImage: '',
+        backgroundOffset: [0, 0],
         dynamicHideMarker: false,
         marker: {
             draggable: false,
@@ -65,7 +67,7 @@ class SJGMap {
             images: []
         },
         cluster: {
-            clusterRadius: 40,
+            clusterRadius: 100,
             content: undefined,
             update: undefined,
             dx: 0,
@@ -135,7 +137,6 @@ class SJGMap {
     showHideMarker(marker) {
         if (!this.option.dynamicHideMarker) return;
         const pos = marker.origin.getPosition();
-        // const containerExtent = marker.origin.getContainerExtent();
         const isIn = d3.polygonContains([
             [1001, 244], [1812, 376], [935, 968], [96, 624]
         ], [pos.x, pos.y]);
@@ -271,7 +272,7 @@ class SJGMap {
         this.option = merge(opts, this.defaultOption);
         // this.option.minZoom = this.option.zoom;
         this.option.baseLayer = new maptalks.TileLayer("base", {
-            urlTemplate: '',
+            // urlTemplate: '',
             // "https://wprd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=2&style=8&ltype=10",
             // urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
             // urlTemplate:
@@ -285,8 +286,10 @@ class SJGMap {
         this.option.doubleClickZoom = false;
         this.option.zoomInCenter = false;
         this.option.hitDetect = false;
-        this.option.zoom = 16.93;
-        this.option.center = [121.29835499926844, 29.1765619894460];
+        // this.option.zoom = 16.93;
+        // this.option.center = [121.29835499926844, 29.1765619894460];
+
+        const om = new OldMap(dom, this.option.tiles);
 
         const content = d3.select(dom)
             .append('div')
@@ -303,11 +306,51 @@ class SJGMap {
             .style('align-items', 'center')
             .style('box-sizing', 'border-box');
 
+        const backgroundOut = d3.select('body')
+            .append('div')
+            .style('position', 'absolute')
+            .style('width', '100%')
+            .style('height', '100%')
+            .style('left', 0)
+            .style('top', 0)
+            .style('z-index', 0)
+            .style('pointer-events', 'none')
+            .style('background', `url(${this.option.backgroundImage})`)
+            .style('background-repeat', 'no-repeat')
+            .style('background-size', '100% 100%')
+            .style('display', 'none');
+
+        const backgroundIn = container
+            .append('div')
+            .style('position', 'absolute')
+            .style('width', '100%')
+            .style('height', '100%')
+            .style('left', 0)
+            .style('top', 0)
+            .style('z-index', 0)
+            .style('pointer-events', 'none')
+            .style('background', `url(${this.option.backgroundImage})`)
+            .style('background-repeat', 'no-repeat')
+            .style('background-size', '100% 100%');
+
+        const maskImage = container
+            .append('div')
+            .style('position', 'absolute')
+            .style('width', '1767px')
+            .style('height', '916px')
+            .style('left', '107px')
+            .style('top', '44px')
+            .style('z-index', 0)
+            .style('pointer-events', 'none')
+            .style('background', `url(${this.option.maskImage})`)
+            .style('background-repeat', 'no-repeat')
+            .style('background-size', '100% 100%');
+
         const w = 1920;
         const h = 1080;
 
         const box = container.node();
-        WZoom.create(box, {
+        const wheelzoom = WZoom.create(box, {
             type: 'html',
             width: w,
             height: h,
@@ -319,9 +362,29 @@ class SJGMap {
             watchImageChange: false,
             smoothExtinction: 0,
             dragScrollableOptions: {
-                smoothExtinction: 0,
+                smoothExtinction: 0
             }
         });
+
+        const element = d3.select(wheelzoom.content.$element);
+
+        let isShowMask = true;
+        element.on('wheel', (evt) => {
+            const computedTransform = getComputedStyle(element.node()).transform;
+            const matrix = computedTransform.match(/matrix\(([^\)]*)\)/)[1].split(/, *| +/);
+            if (matrix[0] === '1' && !isShowMask) {
+                maskImage.style('display', 'block');
+                backgroundIn.style('display', 'block');
+                backgroundOut.style('display', 'none');
+                isShowMask = true;
+            }
+            if (matrix[0] !== '1' && isShowMask) {
+                maskImage.style('display', 'none');
+                backgroundIn.style('display', 'none');
+                backgroundOut.style('display', 'block');
+                isShowMask = false;
+            }
+        })
 
         const canvas = container.append('canvas')
             .style('width', `${w}px`)
@@ -329,16 +392,25 @@ class SJGMap {
             .attr('width', w * 2)
             .attr('height', h * 2)
             .style('pointer-events', 'none')
+            .style('opacity', 0)
 
-        new DrawTiles(canvas.node(), this.option.tiles, { width: w * 2, height: h * 2 });
+        const offsetX = this.option.backgroundOffset[0];
+        const offsetY = this.option.backgroundOffset[1];
+        new DrawTiles(canvas.node(), this.option.tiles, { width: w, height: h, scale: 2, offsetX, offsetY });
 
         const mapContainer = container.append('div')
             .style('position', 'absolute')
             .style('width', `${w}px`)
-            .style('height', `${h}px`);
+            .style('height', `${h}px`)
+            .style('left', `${offsetX}px`)
+            .style('top', `${offsetY}px`);
 
         this.map = new maptalks.Map(mapContainer.node(), this.option);
         this.map.setCursor('move');
+
+        document.onmousemove = (evt) => {
+            console.log(evt.clientX, evt.clientY)
+        }
 
         // this.map.on('mousedown', (evt) => {
         //     // this.map.setMinZoom(this.option.zoom);
@@ -389,38 +461,6 @@ class SJGMap {
             'animationDuration': 0,
         }).addTo(this.map);
 
-        // const mapExtent = [121.31638, 29.1666, 121.2802, 29.1866];
-        // const stepX = (mapExtent[2] - mapExtent[0]) / 2;
-        // const stepY = (mapExtent[3] - mapExtent[1]) / 2;
-
-        // const { tiles } = this.option;
-        // for (let i = 0; i < tiles.length; i++) {
-        // }
-        // const imageGroup = tiles.map((url, i) => {
-        //     const volumn = i % 2;
-        //     const row = Math.floor(i / 2);
-        //     const currentExtent = [
-        //         mapExtent[0] + stepX * volumn,
-        //         mapExtent[1] + stepY * row,
-        //         mapExtent[0] + stepX * (volumn + 1),
-        //         mapExtent[1] + stepY * (row + 1),
-        //     ]
-        //     return {
-        //         url,
-        //         extent: currentExtent,
-        //         // opacity: 1,
-        //         // opacity: 0.3,
-        //     }
-        // })
-
-        // const imageLayer = new maptalks.ImageLayer("images", imageGroup, {
-        //     forceRenderOnMoving: true,
-        //     forceRenderOnZooming: true,
-        //     forceRenderOnRotating: false,
-        //     zIndex: 0,
-        // })
-        // this.map.addLayer(imageLayer);
-
         // const maxExtent = new maptalks.Extent([121.31628, 29.1671, 121.2812, 29.1861]);
 
         // this.preCenter = this.map.getCenter();
@@ -445,45 +485,45 @@ class SJGMap {
         //     this.preZoom = this.map.getZoom();
         // })
 
-        if (this.option.maskImage || this.option.backgroundImage) {
-            const canvasLayer = new maptalks.CanvasLayer('c', {
-                forceRenderOnMoving: true,
-                forceRenderOnZooming: true,
-                forceRenderOnRotating: false,
-            });
+        // if (this.option.maskImage || this.option.backgroundImage) {
+        //     const canvasLayer = new maptalks.CanvasLayer('c', {
+        //         forceRenderOnMoving: true,
+        //         forceRenderOnZooming: true,
+        //         forceRenderOnRotating: false,
+        //     });
 
-            const img2 = document.createElement('img');
-            img2.src = this.option.maskImage;
-            const img = document.createElement('img');
-            img.src = this.option.backgroundImage;
-            const minZoom = this.option.zoom;
-            const centerX = '' + this.option.center[0];
-            const centerY = '' + this.option.center[1];
-            img2.onload = () => {
-                img.onload = () => {
-                    canvasLayer.draw = function (context) {
-                        const size = this.map.getSize();
-                        const { width, height } = size;
-                        context.drawImage(img, 0, 0, width, height);
-                        const currentZoom = this.map.getZoom();
-                        if (currentZoom === minZoom) {
-                            const currentCenter = this.map.getCenter();
-                            const currentX = currentCenter.x.toFixed(4);
-                            const currentY = currentCenter.y.toFixed(4);
-                            if (centerX === currentX && centerY === currentY) {
-                                context.drawImage(img2, 108, 44, 1767, 916);
-                            }
-                        }
-                        this.completeRender();
-                    };
+        //     const img2 = document.createElement('img');
+        //     img2.src = this.option.maskImage;
+        //     const img = document.createElement('img');
+        //     img.src = this.option.backgroundImage;
+        //     const minZoom = this.option.zoom;
+        //     const centerX = '' + this.option.center[0];
+        //     const centerY = '' + this.option.center[1];
+        //     img2.onload = () => {
+        //         img.onload = () => {
+        //             canvasLayer.draw = function (context) {
+        //                 const size = this.map.getSize();
+        //                 const { width, height } = size;
+        //                 context.drawImage(img, 0, 0, width, height);
+        //                 const currentZoom = this.map.getZoom();
+        //                 if (currentZoom === minZoom) {
+        //                     const currentCenter = this.map.getCenter();
+        //                     const currentX = currentCenter.x.toFixed(4);
+        //                     const currentY = currentCenter.y.toFixed(4);
+        //                     if (centerX === currentX && centerY === currentY) {
+        //                         context.drawImage(img2, 108, 44, 1767, 916);
+        //                     }
+        //                 }
+        //                 this.completeRender();
+        //             };
 
-                    canvasLayer.drawOnInteracting = function (context) {
-                        this.draw(context);
-                    };
-                    this.map.addLayer(canvasLayer);
-                }
-            }
-        }
+        //             canvasLayer.drawOnInteracting = function (context) {
+        //                 this.draw(context);
+        //             };
+        //             this.map.addLayer(canvasLayer);
+        //         }
+        //     }
+        // }
 
         this.buildingLayer = new maptalks.VectorLayer("buildings", {
             zIndex: 1
