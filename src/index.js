@@ -140,8 +140,10 @@ class SJGMap {
     showHideMarker(marker) {
         if (!this.option.dynamicHideMarker) return;
         const pos = marker.origin.getPosition();
+        const offsetX = this.option.backgroundOffset[0];
+        const offsetY = this.option.backgroundOffset[1];
         const isIn = d3.polygonContains([
-            [1001, 244], [1812, 376], [935, 968], [96, 624]
+            [1043-offsetX, 240-offsetY], [1851-offsetX, 390-offsetY], [938-offsetX, 996-offsetY], [68-offsetX, 651-offsetY]
         ], [pos.x, pos.y]);
         if (!isIn) {
             if (marker.content) marker.content.hide();
