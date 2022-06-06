@@ -18,8 +18,8 @@ class SJGMap {
     buildingGroup = [];
 
     defaultOption = {
-        center: [121.29835499926844, 29.1765619894460],
-        zoom: 16.93,
+        pitch: 72,
+        bearing: 150,
         maxZoom: 18.5,
         clusterZoom: 18.5,
         draggable: false,
@@ -37,8 +37,6 @@ class SJGMap {
             content: "",
         },
         data: [],
-        pitch: 75,
-        bearing: 149.5,
         tiles: '',
         backgroundImage: '',
         maskImage: '',
@@ -132,6 +130,11 @@ class SJGMap {
                 }
             });
         }
+    }
+
+    getGaodeLatlng(point) {
+        const latlng = new OldMap(this.dom, point);
+        return latlng;
     }
 
     showHideMarker(marker) {
@@ -270,6 +273,7 @@ class SJGMap {
 
     constructor(dom, opts = {}) {
         this.option = merge(opts, this.defaultOption);
+        this.dom = dom;
         // this.option.minZoom = this.option.zoom;
         this.option.baseLayer = new maptalks.TileLayer("base", {
             // urlTemplate: '',
@@ -282,14 +286,13 @@ class SJGMap {
             attribution: "",
             opacity: 0,
         });
+        this.option.draggable = false;
         this.option.scrollWheelZoom = false;
         this.option.doubleClickZoom = false;
         this.option.zoomInCenter = false;
         this.option.hitDetect = false;
-        // this.option.zoom = 16.93;
-        // this.option.center = [121.29835499926844, 29.1765619894460];
-
-        const om = new OldMap(dom, this.option.tiles);
+        this.option.zoom = 17.44;
+        this.option.center = [121.29705559775402, 29.178167355972136];
 
         const content = d3.select(dom)
             .append('div')
@@ -323,10 +326,10 @@ class SJGMap {
         const backgroundIn = container
             .append('div')
             .style('position', 'absolute')
-            .style('width', '100%')
-            .style('height', '100%')
-            .style('left', 0)
-            .style('top', 0)
+            .style('width', '2010px')
+            .style('height', '1131px')
+            .style('left', '-44px')
+            .style('top', '-9px')
             .style('z-index', 0)
             .style('pointer-events', 'none')
             .style('background', `url(${this.option.backgroundImage})`)
@@ -336,9 +339,9 @@ class SJGMap {
         const maskImage = container
             .append('div')
             .style('position', 'absolute')
-            .style('width', '1767px')
-            .style('height', '916px')
-            .style('left', '107px')
+            .style('width', '1850px')
+            .style('height', '950px')
+            .style('left', '70px')
             .style('top', '44px')
             .style('z-index', 0)
             .style('pointer-events', 'none')
@@ -350,10 +353,12 @@ class SJGMap {
         const h = 1080;
 
         const box = container.node();
+        const clientWidth = document.documentElement.clientWidth;
+        const clientHeight = document.documentElement.clientHeight;
         const wheelzoom = WZoom.create(box, {
             type: 'html',
-            width: w,
-            height: h,
+            width: clientWidth,
+            height: clientHeight,
             dragScrollable: true,
             minScale: 1,
             maxScale: 2,
@@ -392,11 +397,11 @@ class SJGMap {
             .attr('width', w * 2)
             .attr('height', h * 2)
             .style('pointer-events', 'none')
-            .style('opacity', 0)
+            .style('opacity', 1)
 
         const offsetX = this.option.backgroundOffset[0];
         const offsetY = this.option.backgroundOffset[1];
-        new DrawTiles(canvas.node(), this.option.tiles, { width: w, height: h, scale: 2, offsetX, offsetY });
+        new DrawTiles(canvas.node(), this.option.tiles, { scale: 2, offsetX, offsetY });
 
         const mapContainer = container.append('div')
             .style('position', 'absolute')
@@ -408,9 +413,9 @@ class SJGMap {
         this.map = new maptalks.Map(mapContainer.node(), this.option);
         this.map.setCursor('move');
 
-        document.onmousemove = (evt) => {
-            console.log(evt.clientX, evt.clientY)
-        }
+        // this.map.on('moveend', () => {
+        //     console.log('mmm', this.map.getCenter())
+        // })
 
         // this.map.on('mousedown', (evt) => {
         //     // this.map.setMinZoom(this.option.zoom);

@@ -1,8 +1,8 @@
 class Tiles {
-    constructor(canvas, images, { width, height, scale, offsetX, offsetY }) {
+    constructor(canvas, images, { scale, offsetX, offsetY }) {
         const ctx = canvas.getContext('2d');
-        const w = width * scale;
-        const h = height * scale;
+        const w = 1590 * scale;
+        const h = 1000 * scale;
 
         const loadImage = url => {
             return new Promise((resolve, reject) => {
@@ -13,7 +13,8 @@ class Tiles {
             });
         };
 
-        const extent = [0, 0, w, h];
+        const ss = 1.41;
+        const extent = [0, 0, w * ss, h * ss];
         const stepX = (extent[2] - extent[0]) / 2;
         const stepY = (extent[3] - extent[1]) / 2;
         const imageGroup = images.map((url, i) => {
@@ -30,7 +31,7 @@ class Tiles {
 
         const depict = async (options) => {
             const img = await loadImage(options.url);
-            ctx.drawImage(img, options.x + offsetX * scale, options.y + offsetY * scale, options.w, options.h);
+            ctx.drawImage(img, options.x + offsetX * scale - 360, options.y + offsetY * scale - 480, options.w, options.h);
         };
 
         imageGroup.forEach(depict);
